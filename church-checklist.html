@@ -1,0 +1,717 @@
+
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="4133구역">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#1e2a1f">
+<title>4133구역 체크리스트</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html{font-family:'Apple SD Gothic Neo','Noto Sans KR',-apple-system,BlinkMacSystemFont,sans-serif;background:#f4f2ed;color:#1e2a1f;font-size:14px;-webkit-text-size-adjust:100%}
+body{max-width:520px;margin:0 auto;padding-bottom:80px;min-height:100vh;min-height:100dvh}
+
+.hd{background:linear-gradient(135deg,#1e2a1f,#3d5a3a);padding:20px 16px 14px;position:sticky;top:0;z-index:20;display:flex;justify-content:space-between;align-items:flex-start}
+.hd h1{font-size:19px;font-weight:800;color:#e4dfcf;letter-spacing:-.5px}
+.hd p{font-size:12px;color:#9aab90;margin-top:2px}
+.hd button{background:none;border:none;cursor:pointer;padding:4px}
+
+.tabs{background:#fff;border-bottom:1px solid #e0ddd4;position:sticky;top:58px;z-index:19;display:flex;overflow-x:auto;padding:6px 8px;gap:3px;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+.tabs::-webkit-scrollbar{display:none}
+.tabs button{padding:6px 13px;border:none;border-radius:16px;background:transparent;color:#8a8578;font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap;flex-shrink:0;transition:all .12s;position:relative}
+.tabs button.on{background:#1e2a1f;color:#fff}
+.tabs button .dot{display:none;width:5px;height:5px;border-radius:50%;background:#3d5a3a;position:absolute;top:2px;right:4px}
+.tabs button.has-data .dot{display:block}
+.tabs button.on .dot{background:#8bc34a}
+
+.sum{padding:10px 16px 6px;display:flex;align-items:center;justify-content:center;gap:20px}
+.sum .n{font-size:26px;font-weight:800;color:#1e2a1f;line-height:1}
+.sum .l{font-size:11px;color:#8a8578;font-weight:600;margin-top:2px;text-align:center}
+.sum .dv{width:1px;height:32px;background:#d4d0c6}
+.att-bar{margin:0 16px 6px;background:#fff;border-radius:8px;padding:6px 10px;font-size:12px;color:#4a3f35;line-height:1.5}
+.att-bar b{color:#8a8578;font-size:11px;font-weight:600}
+
+.src-bar{margin:0 16px 6px;padding:6px 10px;border-radius:8px;font-size:11px;display:flex;justify-content:space-between;align-items:center}
+.src-bar.local{background:#e8f5e9;color:#2e7d32}
+.src-bar.sheet{background:#e3f2fd;color:#1565c0}
+.src-bar.empty{background:#fff8e1;color:#f57f17}
+.src-bar button{background:none;border:none;color:inherit;font-size:11px;font-weight:700;cursor:pointer;text-decoration:underline}
+
+.vtog{display:flex;margin:0 16px 8px;background:#e4e1d8;border-radius:10px;padding:3px}
+.vtog button{flex:1;padding:7px 0;border:none;border-radius:8px;background:transparent;color:#8a8578;font-size:13px;font-weight:600;cursor:pointer;transition:all .12s}
+.vtog button.on{background:#fff;color:#1e2a1f;box-shadow:0 1px 3px rgba(0,0,0,.08)}
+
+.lh{display:flex;justify-content:space-between;padding:8px 16px 5px;font-size:11px;color:#a09a8c;border-bottom:1px solid #d8d5cc}
+
+.mr{border-bottom:1px solid #eae7df}
+.mr:nth-child(odd){background:#fff}
+.mr:nth-child(even){background:#faf9f6}
+.mc{display:flex;align-items:center;padding:10px 14px;cursor:pointer;gap:10px}
+.ck{width:32px;height:32px;border-radius:8px;border:2px solid #c8c3b8;background:#fff;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;transition:all .12s}
+.ck.on{background:#3d5a3a;border-color:#3d5a3a;box-shadow:0 2px 6px rgba(61,90,58,.3)}
+.ck svg{display:none}.ck.on svg{display:block}
+.mn{font-size:14px;font-weight:700;flex:1}
+.mn small{font-size:10px;color:#a09a8c;display:block;margin-top:1px}
+.badge{font-size:9px;font-weight:700;padding:1px 5px;border-radius:4px;background:#dde8d8;color:#3d5a3a;margin-left:4px;vertical-align:middle}
+.sc{font-size:13px;font-weight:800;color:#3d5a3a;min-width:24px;text-align:right}
+.arr{transition:transform .15s}
+
+.dt{padding:0 14px 12px;background:#f0eee6;display:none}
+.mr.open .dt{display:block}.mr.open .arr{transform:rotate(180deg)}
+.gh{font-size:12px;font-weight:700;color:#6b6558;padding:8px 0 4px;border-bottom:1px solid #d8d5cc}
+.ir{display:flex;align-items:center;justify-content:space-between;padding:8px 0;gap:6px}
+.il{flex:1;font-size:13px;font-weight:600;color:#1e2a1f}
+.il span{display:block;font-size:10px;color:#a09a8c;font-weight:400}
+.tb{width:42px;height:32px;border-radius:8px;border:2px solid #c8c3b8;background:#fff;color:#8a8578;font-size:13px;font-weight:800;cursor:pointer;transition:all .12s}
+.tb.on{background:#3d5a3a;border-color:#3d5a3a;color:#fff}
+.nw{display:flex;align-items:center;gap:2px}
+.pm{width:28px;height:32px;border-radius:7px;border:1px solid #d4d0c6;background:#fff;font-size:17px;color:#1e2a1f;cursor:pointer;display:flex;align-items:center;justify-content:center}
+.ni{width:40px;height:32px;border:2px solid #e0ddd4;border-radius:7px;text-align:center;font-size:14px;font-weight:700;color:#1e2a1f;background:#fff;outline:none;-webkit-appearance:none;-moz-appearance:textfield}
+.ni::-webkit-inner-spin-button,.ni::-webkit-outer-spin-button{-webkit-appearance:none}
+
+.sv{padding:0 16px 12px;display:none}.sv.on{display:block}
+.sr{display:flex;justify-content:space-between;align-items:center;padding:10px 12px;background:#fff;border-radius:10px;margin-top:5px}
+.sr .sn{font-size:14px;font-weight:600}.sr .sm{font-size:11px;color:#8a8578}
+.sr .sv2{font-size:17px;font-weight:800;text-align:right}.sr .sv3{font-size:10px;color:#a09a8c}
+.sr.total{background:#1e2a1f;margin-top:8px;border-radius:12px}
+.sr.total .sn,.sr.total .sv2{color:#e4dfcf}
+
+.add-area{padding:12px 16px;border-top:2px dashed #d4d0c6;margin-top:4px}
+.add-btn{width:100%;padding:12px;border:2px dashed #b8b3a6;border-radius:12px;background:transparent;color:#6b6558;font-size:14px;font-weight:600;cursor:pointer;transition:all .12s}
+.add-btn:active{background:#e4e1d8}
+.add-form{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.add-form input{flex:1;min-width:100px;height:38px;border:2px solid #e0ddd4;border-radius:8px;padding:0 10px;font-size:14px;outline:none}
+.add-form select{height:38px;border:2px solid #e0ddd4;border-radius:8px;padding:0 8px;font-size:13px;outline:none;background:#fff}
+.add-form button{height:38px;padding:0 16px;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer}
+.add-ok{background:#3d5a3a;color:#fff}
+.add-cancel{background:#e4e1d8;color:#6b6558}
+
+.ft{position:fixed;bottom:0;left:0;right:0;padding:10px 16px;padding-bottom:max(10px,env(safe-area-inset-bottom));background:rgba(244,242,237,.95);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);border-top:1px solid #d4d0c6;z-index:30;display:flex;gap:8px;justify-content:center}
+.bp{flex:1;display:flex;align-items:center;justify-content:center;padding:12px 14px;border:none;border-radius:12px;background:linear-gradient(135deg,#1e2a1f,#3d5a3a);color:#fff;font-size:14px;font-weight:700;cursor:pointer}
+.bp:disabled{opacity:.5}
+.bo{width:46px;display:flex;align-items:center;justify-content:center;border:2px solid #1e2a1f;border-radius:12px;background:#fff;cursor:pointer;flex-shrink:0}
+.toast{position:fixed;bottom:76px;left:50%;transform:translateX(-50%);padding:9px 20px;border-radius:18px;background:rgba(30,42,31,.92);color:#fff;font-size:13px;font-weight:600;z-index:40;box-shadow:0 4px 14px rgba(0,0,0,.15);white-space:nowrap;opacity:0;transition:opacity .2s}
+.toast.show{opacity:1}
+.loader{text-align:center;padding:12px;font-size:12px;color:#8a8578;background:#fff8e1;border-radius:8px;margin:0 16px 6px}
+
+.setup{min-height:100vh;min-height:100dvh;display:flex;align-items:center;justify-content:center;padding:16px}
+.setup-c{background:#fff;border-radius:20px;padding:32px 20px;max-width:400px;width:100%;text-align:center;box-shadow:0 4px 24px rgba(0,0,0,.06)}
+.setup-c h1{font-size:21px;font-weight:800;margin:8px 0 6px}
+.setup-c p{font-size:13px;color:#6b6558;line-height:1.5;margin-bottom:16px}
+.setup-c input{width:100%;padding:12px;border:2px solid #e0ddd4;border-radius:10px;font-size:13px;outline:none;margin-bottom:10px;box-sizing:border-box}
+.guide{text-align:left;margin-top:16px;font-size:12px;line-height:1.6;color:#4a3f35}
+.guide summary{font-size:13px;font-weight:700;color:#3d5a3a;cursor:pointer;padding:6px 0}
+
+/* 보고서 테이블 */
+.rpt{padding:0 0 12px;overflow-x:auto;-webkit-overflow-scrolling:touch}
+.rpt table{border-collapse:collapse;font-size:11px;min-width:700px;width:100%}
+.rpt th{background:#2d3a2e;color:#e4dfcf;font-weight:700;padding:6px 4px;white-space:nowrap;position:sticky;top:0;z-index:2;border:1px solid #1e2a1f}
+.rpt th.col-name{position:sticky;left:0;z-index:3;min-width:60px}
+.rpt td{padding:5px 4px;text-align:center;border:1px solid #e0ddd4;white-space:nowrap}
+.rpt td.name{position:sticky;left:0;background:inherit;text-align:left;font-weight:700;font-size:12px;z-index:1;min-width:60px}
+.rpt tr:nth-child(odd){background:#fff}
+.rpt tr:nth-child(even){background:#f8f7f3}
+.rpt tr:hover{background:#eef5e8}
+.rpt .ck-o{color:#2e7d32;font-weight:800}
+.rpt .ck-x{color:#ccc}
+.rpt .num{color:#1565c0;font-weight:700}
+.rpt .total-row{background:#f5f0e0 !important;font-weight:800}
+.rpt .total-row td{border-top:2px solid #2d3a2e;font-size:12px}
+.rpt .score-col{background:rgba(61,90,58,.08);font-weight:800;color:#2d3a2e}
+</style>
+
+<div id="app"></div>
+<div id="toast" class="toast"></div>
+
+<script>
+const P_ID='4133',P_LABEL='4133구역';
+const FALLBACK_MEMBERS=[
+  {n:'성미선',r:'구역장'},{n:'박성규',r:'권찰'},{n:'고요한',r:'구역원'},{n:'김성이B',r:'구역원'},
+  {n:'김진선C',r:'구역원'},{n:'박종민A',r:'구역원'},{n:'범하나',r:'구역원'},{n:'이상규',r:'구역원'},
+  {n:'이수영',r:'구역원'},{n:'정동진',r:'구역원'},{n:'정희진B',r:'구역원'},{n:'제영호',r:'구역원'},
+  {n:'조정연',r:'구역원'},{n:'지명희',r:'구역원'},{n:'이상인A',r:'구역원'},{n:'안성민',r:'구역원'},
+  {n:'이재영A',r:'구역원'},{n:'장서연B',r:'구역원'}
+];
+const ITEMS=[
+  {k:'at',l:'출석',s:20,t:'c',g:0},{k:'br',l:'성경읽기',s:1,u:'장',t:'n',g:1},
+  {k:'bw',l:'성경쓰기',s:5,u:'쪽',t:'n',g:1},{k:'bt',l:'성경타이핑',s:2,u:'쪽',t:'n',g:1},
+  {k:'me',l:'암송',s:3,t:'c',g:2},{k:'ev',l:'전도',s:50,t:'c',g:2},
+  {k:'ds',l:'구역봉사',s:100,t:'c',g:3},{k:'ss',l:'주일/봉사팀 봉사',s:30,t:'c',g:3},
+  {k:'nu',l:'양육',s:10,t:'c',g:2},{k:'mg',l:'양화진/순교자 안내',s:20,t:'c',g:3},
+  {k:'en',l:'환경보호점수',s:100,t:'c',g:4},{k:'mp',l:'구역모임 장소',s:100,t:'c',g:4},
+  {k:'wb',l:'겨울방학 성경읽기',s:1,u:'장',t:'n',g:4},{k:'bm',l:'성경 통독수련회',s:1189,t:'c',g:4}
+];
+const GROUPS=[{l:'📖 성경',g:1},{l:'🙏 신앙생활',g:2},{l:'🤝 봉사',g:3},{l:'⭐ 특별항목',g:4}];
+const MAP_TO_SHEET={at:'attendance',br:'bible_read',bw:'bible_write',bt:'bible_typing',me:'memorize',ev:'evangelism',ds:'district_service',ss:'sunday_service',nu:'nurture',mg:'martyr_guide',en:'environment',mp:'meeting_place',wb:'winter_bible',bm:'bible_marathon'};
+const MAP_FROM_SHEET={};Object.entries(MAP_TO_SHEET).forEach(([k,v])=>MAP_FROM_SHEET[v]=k);
+
+let sundays=[];
+(function(){const now=new Date();for(let i=-6;i<=4;i++){const d=new Date(now);const day=d.getDay();d.setDate(d.getDate()-day+(day===0?0:7)+i*7);d.setHours(0,0,0,0);const m=d.getMonth()+1,dt=d.getDate();sundays.push({k:`${d.getFullYear()}-${String(m).padStart(2,'0')}-${String(dt).padStart(2,'0')}`,l:`${m}/${dt}`,ts:d.getTime()});}})();
+
+// ═══ 상태 ═══
+let state={url:'',week:'',data:{},members:[],expanded:null,view:'list',ready:false,loading:false,addingMember:false,dataSource:'',savedWeeks:{},lastModified:null,unsaved:false,touched:new Set()};
+state.week=(function(){let c=sundays[0],now=Date.now();for(const s of sundays)if(Math.abs(s.ts-now)<Math.abs(c.ts-now))c=s;return c.k;})();
+
+function empty(){const d={};ITEMS.forEach(i=>d[i.k]=i.t==='c'?false:'');return d;}
+function emptyAll(){const o={};state.members.forEach(m=>o[m.n]=empty());return o;}
+function score(d){if(!d)return 0;let t=0;ITEMS.forEach(i=>{if(i.t==='c'&&d[i.k])t+=i.s;else if(i.t==='n')t+=(parseInt(d[i.k])||0)*i.s;});return t;}
+function filled(d){if(!d)return 0;let c=0;ITEMS.forEach(i=>{if(i.t==='c'&&d[i.k])c++;else if(i.t==='n'&&parseInt(d[i.k])>0)c++;});return c;}
+function hasFilled(d){return filled(d)>0;}
+function hasAnyData(d){return state.members.some(m=>hasFilled(d[m.n]));}
+
+// ═══ 스토리지 (Claude 아티팩트 + 일반 브라우저 호환) ═══
+const SK=w=>`ch4133:${w}`,UK='ch4133:url',MK='ch4133:members',WK='ch4133:savedWeeks';
+const HAS_CLOUD=typeof window.storage!=='undefined'&&window.storage&&typeof window.storage.get==='function';
+
+async function sget(k){
+  // 1. window.storage (Claude 아티팩트)
+  if(HAS_CLOUD){
+    try{const r=await window.storage.get(k);if(r&&r.value!==undefined&&r.value!==null)return r.value;return null;}catch{}
+  }
+  // 2. localStorage (일반 브라우저/핸드폰)
+  try{return localStorage.getItem(k);}catch{return null;}
+}
+async function sset(k,v){
+  let ok=false;
+  if(HAS_CLOUD){
+    try{const r=await window.storage.set(k,v);ok=!!r;}catch{}
+  }
+  try{localStorage.setItem(k,v);ok=true;}catch{}
+  return ok;
+}
+async function sdel(k){
+  if(HAS_CLOUD){try{await window.storage.delete(k);}catch{}}
+  try{localStorage.removeItem(k);}catch{}
+}
+
+// ═══ 저장된 주차 관리 ═══
+async function markWeekSaved(weekKey){
+  state.savedWeeks[weekKey]=true;
+  await sset(WK,JSON.stringify(state.savedWeeks));
+}
+async function loadSavedWeeks(){
+  const raw=await sget(WK);
+  if(raw)state.savedWeeks=JSON.parse(raw);
+}
+
+// ═══ 데이터 저장 (매 변경마다 로컬에 저장) ═══
+async function saveData(){
+  state.lastModified=new Date();
+  state.unsaved=true;
+  const json=JSON.stringify(state.data);
+  const ok=await sset(SK(state.week),json);
+  if(ok&&hasAnyData(state.data))await markWeekSaved(state.week);
+  // 최종수정 시간 UI 업데이트
+  const el=document.getElementById('last-mod');
+  if(el){
+    const t=state.lastModified;
+    el.textContent='최종수정 '+t.getHours()+':'+String(t.getMinutes()).padStart(2,'0')+':'+String(t.getSeconds()).padStart(2,'0');
+    el.style.display='inline';
+  }
+  const uel=document.getElementById('unsaved-badge');
+  if(uel)uel.style.display='inline';
+}
+
+// ═══ 구역원 불러오기 ═══
+async function loadMembers(){
+  if(state.url){
+    try{
+      const res=await fetch(state.url+'?action=members&parish='+P_ID,{redirect:'follow'});
+      const text=await res.text();
+      if(!text.startsWith('<')){
+        const json=JSON.parse(text);
+        if(json.members&&json.members.length>0){
+          state.members=json.members.map(m=>({n:m.name,r:m.role}));
+          await sset(MK,JSON.stringify(state.members));return;
+        }
+      }
+    }catch(e){}
+  }
+  const cached=await sget(MK);
+  if(cached){state.members=JSON.parse(cached);return;}
+  state.members=[...FALLBACK_MEMBERS];
+}
+
+// ═══ 주간 데이터 불러오기 (구글시트 = 주 저장소) ═══
+async function loadWeek(){
+  state.loading=true;state.dataSource='';render();
+
+  // 1단계: 구글 시트에서 불러오기 (주 저장소)
+  if(state.url){
+    try{
+      const fromSheet=await fetchFromSheet(state.week);
+      if(fromSheet){
+        state.data=fromSheet;
+        state.dataSource='sheet';
+        // 로컬에도 캐시
+        await sset(SK(state.week),JSON.stringify(state.data));
+        await markWeekSaved(state.week);
+        state.loading=false;
+        render();
+        return;
+      }
+    }catch(e){console.log('Sheet load failed, trying local:',e);}
+  }
+
+  // 2단계: 시트에 없으면 → 로컬 캐시 확인 (오프라인/백업)
+  try{
+    const raw=await sget(SK(state.week));
+    if(raw&&raw.length>10){
+      const localData=JSON.parse(raw);
+      state.data={...emptyAll(),...localData};
+      Object.keys(localData).forEach(k=>{if(!state.data[k])state.data[k]=localData[k];});
+      state.dataSource='local';
+      state.loading=false;
+      render();
+      toast('로컬 캐시에서 불러옴 (시트 동기화 필요)');
+      return;
+    }
+  }catch(e){}
+
+  // 3단계: 둘 다 없으면 새 주간
+  state.data=emptyAll();
+  state.dataSource='empty';
+  state.loading=false;
+  render();
+}
+
+// ═══ 시트에서 데이터 가져오기 (공통) ═══
+async function fetchFromSheet(weekKey){
+  if(!state.url)return null;
+  try{
+    const url=state.url+'?action=read&date='+encodeURIComponent(weekKey)+'&parish='+P_ID;
+    const res=await fetch(url,{redirect:'follow'});
+    const text=await res.text();
+    // Apps Script 가 HTML 을 반환하는 경우 (리다이렉트 실패)
+    if(text.startsWith('<')){console.log('Sheet returned HTML, not JSON');return null;}
+    const json=JSON.parse(text);
+    if(json.rows&&json.rows.length>0){
+      const loaded=emptyAll();
+      json.rows.forEach(r=>{
+        const name=r.member_name;
+        if(!loaded[name])loaded[name]=empty();
+        Object.entries(MAP_FROM_SHEET).forEach(([sheetKey,appKey])=>{
+          const item=ITEMS.find(i=>i.k===appKey);if(!item)return;
+          const val=r[sheetKey];
+          if(item.t==='c')loaded[name][appKey]=(val==='O'||val===true);
+          else if(item.t==='n')loaded[name][appKey]=val?String(val):'';
+        });
+      });
+      return loaded;
+    }
+    return null;
+  }catch(e){
+    console.log('fetchFromSheet error:',e);
+    state._lastError='시트 읽기 실패: '+e.message;
+    return null;
+  }
+}
+
+// ═══ 시트에서 강제 새로고침 ═══
+async function forceLoadFromSheet(){
+  if(!state.url){toast('시트 연동이 필요합니다');return;}
+  state.loading=true;render();
+  const fromSheet=await fetchFromSheet(state.week);
+  if(fromSheet){
+    state.data=fromSheet;
+    state.dataSource='sheet';
+    await sset(SK(state.week),JSON.stringify(state.data));
+    await markWeekSaved(state.week);
+    toast('시트에서 새로 불러왔습니다');
+  }else{toast('시트에 해당 주 데이터가 없습니다');}
+  state.loading=false;render();
+}
+
+async function addMember(){
+  const nameEl=document.getElementById('add-name'),roleEl=document.getElementById('add-role');
+  if(!nameEl)return;const name=nameEl.value.trim(),role=roleEl?roleEl.value:'구역원';
+  if(!name){toast('이름을 입력해주세요');return;}
+  if(state.members.some(m=>m.n===name)){toast('이미 등록된 이름입니다');return;}
+  if(state.url){try{await fetch(state.url,{method:'POST',redirect:'follow',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({action:'addMember',name,role,parish_id:P_ID})});}catch{}}
+  state.members.push({n:name,r:role});state.data[name]=empty();
+  await sset(MK,JSON.stringify(state.members));
+  state.addingMember=false;toast(name+' 추가 완료');render();
+}
+
+function toast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2200);}
+function render(){const sy=window.scrollY;_render();requestAnimationFrame(()=>window.scrollTo(0,sy));}
+
+function updateSummary(){
+  const d=state.data,M=state.members;
+  const ac=M.filter(m=>d[m.n]?.at).length,ts=M.reduce((s,m)=>s+score(d[m.n]),0),att=M.filter(m=>d[m.n]?.at).map(m=>m.n);
+  const acEl=document.getElementById('s-ac'),tsEl=document.getElementById('s-ts'),atEl=document.getElementById('s-att');
+  if(acEl)acEl.textContent=ac;if(tsEl)tsEl.textContent=ts.toLocaleString();
+  if(atEl){atEl.innerHTML=att.length>0?'<b>참석: </b>'+att.join(', '):'';atEl.style.display=att.length>0?'block':'none';}
+}
+function updateMemberInfo(name){
+  const d=state.data[name]||empty(),sc_=score(d),fc=filled(d);
+  const infoEl=document.getElementById('mi-'+CSS.escape(name)),scEl=document.getElementById('ms-'+CSS.escape(name));
+  if(infoEl)infoEl.innerHTML=fc>0?`${fc}개 항목 · ${sc_}점`:'';
+  if(scEl){scEl.textContent=sc_>0?sc_:'';scEl.style.display=sc_>0?'':'none';}
+}
+
+function ckAt(name,evt){if(evt)evt.stopPropagation();if(!state.data[name])state.data[name]=empty();state.data[name].at=!state.data[name].at;state.touched.add(name);saveData();const el=document.getElementById('ck-'+CSS.escape(name));if(el){if(state.data[name].at)el.classList.add('on');else el.classList.remove('on');}updateMemberInfo(name);updateSummary();}
+function ckItem(name,k){if(!state.data[name])state.data[name]=empty();state.data[name][k]=!state.data[name][k];state.touched.add(name);saveData();const el=document.getElementById('tb-'+CSS.escape(name)+'-'+k);if(el){if(state.data[name][k]){el.classList.add('on');el.textContent='O';}else{el.classList.remove('on');el.textContent='X';}}updateMemberInfo(name);updateSummary();}
+function numAdj(name,k,delta){if(!state.data[name])state.data[name]=empty();const v=Math.max(0,(parseInt(state.data[name][k])||0)+delta);state.data[name][k]=String(v);state.touched.add(name);saveData();const el=document.getElementById('ni-'+CSS.escape(name)+'-'+k);if(el)el.value=v;updateMemberInfo(name);updateSummary();}
+function numSet(name,k,v){if(!state.data[name])state.data[name]=empty();state.data[name][k]=v;state.touched.add(name);saveData();updateMemberInfo(name);updateSummary();}
+
+function toggle(name){state.expanded=state.expanded===name?null:name;render();}
+function setWeek(k){state.week=k;state.expanded=null;state.lastModified=null;state.unsaved=false;state.touched=new Set();loadWeek();}
+function setView(v){state.view=v;render();}
+function showAddForm(){state.addingMember=true;render();requestAnimationFrame(()=>{const el=document.getElementById('add-name');if(el)el.focus();});}
+function hideAddForm(){state.addingMember=false;render();}
+function esc(s){return s.replace(/'/g,"\\'");}
+
+function _render(){
+  if(!state.ready){renderSetup();return;}
+  const d=state.data,wk=sundays.find(s=>s.k===state.week),M=state.members;
+  const ac=M.filter(m=>d[m.n]?.at).length,ts=M.reduce((s,m)=>s+score(d[m.n]),0),att=M.filter(m=>d[m.n]?.at).map(m=>m.n);
+
+  let h=`<div class="hd"><div><h1>${P_LABEL}</h1><p>${wk?.l||''} 주일 구역보고서</p></div>
+    <button onclick="showSetup()"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#b8b3a6" stroke-width="1.5"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 11-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 11-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 11-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 110-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 112.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 114 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 112.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 110 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg></button></div>`;
+
+  // 주차 탭 (저장된 주차에 녹색 점 표시)
+  h+=`<div class="tabs" id="tabbar">`;
+  sundays.forEach(s=>{
+    const hasData=state.savedWeeks[s.k];
+    h+=`<button class="${s.k===state.week?'on':''}${hasData?' has-data':''}" onclick="setWeek('${s.k}')">${s.l}<span class="dot"></span></button>`;
+  });
+  h+=`</div>`;
+
+  if(state.loading){
+    h+=`<div class="loader">데이터 불러오는 중...</div>`;
+    h+=`<div class="ft"><button class="bp" disabled>로딩 중...</button></div>`;
+    document.getElementById('app').innerHTML=h;
+    requestAnimationFrame(()=>{const tb=document.getElementById('tabbar');const a=tb?.querySelector('.on');if(a)a.scrollIntoView({inline:'center',behavior:'auto'});});
+    return;
+  }
+
+  h+=`<div class="sum"><div><div class="n" id="s-ac">${ac}</div><div class="l">출석 / ${M.length}</div></div><div class="dv"></div><div><div class="n" id="s-ts">${ts.toLocaleString()}</div><div class="l">총점</div></div></div>`;
+  h+=`<div class="att-bar" id="s-att" style="display:${att.length>0?'block':'none'}"><b>참석: </b>${att.join(', ')}</div>`;
+
+  // 최종수정 & 미저장 표시
+  const modTime=state.lastModified?state.lastModified.getHours()+':'+String(state.lastModified.getMinutes()).padStart(2,'0')+':'+String(state.lastModified.getSeconds()).padStart(2,'0'):'';
+  h+=`<div style="display:flex;justify-content:space-between;align-items:center;padding:0 16px 4px;font-size:10px">
+    <span id="last-mod" style="color:#908caa;display:${modTime?'inline':'none'}">${modTime?'최종수정 '+modTime:''}</span>
+    <span id="unsaved-badge" style="color:#e65100;font-weight:700;display:${state.unsaved?'inline':'none'}">● 미저장</span>
+  </div>`;
+
+  // 데이터 출처 표시
+  if(state.dataSource==='sheet')h+=`<div class="src-bar sheet">구글 시트에서 불러옴</div>`;
+  else if(state.dataSource==='local')h+=`<div class="src-bar local" style="background:#fff3e0;color:#e65100">로컬 캐시에서 불러옴 <button onclick="syncSheet()">시트 저장</button></div>`;
+  else if(state.dataSource==='empty')h+=`<div class="src-bar empty">새로운 주간입니다 <button onclick="forceLoadFromSheet()">시트에서 불러오기</button></div>`;
+
+  // 현황 버튼 (보고서 뷰가 아닐 때)
+  if(state.view!=='report'){
+    h+=`<div style="padding:0 16px 8px"><button onclick="setView('report')" style="width:100%;padding:11px;border:none;border-radius:10px;background:linear-gradient(135deg,#1a237e,#283593);color:#fff;font-size:14px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px"><svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M3 3v18h18M7 16V9m4 7v-4m4 4V5m4 11v-2" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>현황 보기</button></div>`;
+  }else{
+    h+=`<div style="padding:0 16px 8px"><button onclick="setView('list')" style="width:100%;padding:11px;border:2px solid #1e2a1f;border-radius:10px;background:#fff;color:#1e2a1f;font-size:14px;font-weight:700;cursor:pointer">← 입력으로 돌아가기</button></div>`;
+  }
+
+  h+=`<div class="vtog"><button class="${state.view==='list'?'on':''}" onclick="setView('list')">입력</button><button class="${state.view==='summary'?'on':''}" onclick="setView('summary')">요약</button><button class="${state.view==='report'?'on':''}" onclick="setView('report')">보고서</button></div>`;
+
+  if(state.view==='list'){
+    h+=`<div class="lh"><span>출석 체크 + 상세 입력</span><span>탭→펼치기</span></div>`;
+    M.forEach((m,i)=>{
+      const md=d[m.n]||empty(),sc_=score(md),fc=filled(md),isOpen=state.expanded===m.n,en=esc(m.n);
+      h+=`<div class="mr${isOpen?' open':''}"><div class="mc" onclick="toggle('${en}')">`;
+      h+=`<div class="ck${md.at?' on':''}" id="ck-${CSS.escape(m.n)}" onclick="ckAt('${en}',event)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M5 13l4 4L19 7" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg></div>`;
+      h+=`<div class="mn">${m.n}${m.r!=='구역원'?`<span class="badge">${m.r}</span>`:''}<small id="mi-${CSS.escape(m.n)}">${fc>0?`${fc}개 항목 · ${sc_}점`:''}</small></div>`;
+      h+=`<span class="sc" id="ms-${CSS.escape(m.n)}" style="display:${sc_>0?'':'none'}">${sc_>0?sc_:''}</span>`;
+      h+=`<svg class="arr" width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M6 9l6 6 6-6" stroke="#8a8578" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>`;
+      h+=`<div class="dt">`;
+      GROUPS.forEach(g=>{
+        const items=ITEMS.filter(it=>it.g===g.g);
+        h+=`<div class="gh">${g.l}</div>`;
+        items.forEach(it=>{
+          h+=`<div class="ir"><div class="il">${it.l}<span>${it.t==='n'?`${it.u}당 ${it.s}점`:`${it.s}점`}</span></div>`;
+          if(it.t==='c')h+=`<button class="tb${md[it.k]?' on':''}" id="tb-${CSS.escape(m.n)}-${it.k}" onclick="ckItem('${en}','${it.k}')">${md[it.k]?'O':'X'}</button>`;
+          else if(it.t==='n')h+=`<div class="nw"><button class="pm" onclick="numAdj('${en}','${it.k}',-1)">−</button><input class="ni" id="ni-${CSS.escape(m.n)}-${it.k}" type="number" inputmode="numeric" value="${md[it.k]||''}" placeholder="0" onchange="numSet('${en}','${it.k}',this.value)"><button class="pm" onclick="numAdj('${en}','${it.k}',1)">+</button></div>`;
+          h+=`</div>`;
+        });
+      });
+      h+=`</div></div>`;
+    });
+    h+=`<div class="add-area">`;
+    if(state.addingMember)h+=`<div class="add-form"><input id="add-name" placeholder="이름" style="flex:2"><select id="add-role"><option value="구역원">구역원</option><option value="구역장">구역장</option><option value="권찰">권찰</option></select><button class="add-ok" onclick="addMember()">추가</button><button class="add-cancel" onclick="hideAddForm()">취소</button></div><p style="font-size:11px;color:#8a8578;margin-top:6px">* INFO 시트에도 자동 추가됩니다</p>`;
+    else h+=`<button class="add-btn" onclick="showAddForm()">+ 구역원 추가</button>`;
+    h+=`</div>`;
+  }
+
+  if(state.view==='summary'){
+    h+=`<div class="sv on">`;
+    ITEMS.forEach(it=>{let cnt=0,sum=0;M.forEach(m=>{const md=d[m.n]||empty();if(it.t==='c'&&md[it.k]){cnt++;sum+=it.s;}else if(it.t==='n'){const v=parseInt(md[it.k])||0;if(v>0){cnt++;sum+=v*it.s;}}});h+=`<div class="sr"><div><div class="sn">${it.l}</div><div class="sm">${cnt}명</div></div><div><div class="sv2">${sum.toLocaleString()}</div><div class="sv3">점</div></div></div>`;});
+    h+=`<div class="sr total"><div class="sn" style="font-size:15px;font-weight:700">합계</div><div class="sv2" style="font-size:20px">${ts.toLocaleString()}점</div></div></div>`;
+  }
+
+  // ═══ 보고서 뷰 (구글시트 형태 테이블) ═══
+  if(state.view==='report'){
+    const cols=ITEMS.filter(i=>i.k!=='at'); // 출석은 별도 컬럼
+    h+=`<div class="rpt"><table>`;
+    // 헤더 1행: 항목명(점수)
+    h+=`<tr><th class="col-name">이름</th><th>출석<br>(20)</th>`;
+    cols.forEach(c=>{
+      const label=c.l.replace('주일/봉사팀 ','주일/봉사팀<br>').replace('양화진/순교자 ','양화진/<br>순교자');
+      h+=`<th>${label}<br>(${c.t==='n'?c.u+'당'+c.s:c.s})</th>`;
+    });
+    h+=`<th style="background:#1e2a1f">합계</th></tr>`;
+
+    // 데이터 행
+    M.forEach(m=>{
+      const md=d[m.n]||empty();
+      const sc_=score(md);
+      h+=`<tr><td class="name">${m.n}</td>`;
+      // 출석
+      h+=md.at?`<td class="ck-o">☑</td>`:`<td class="ck-x">☐</td>`;
+      // 나머지 항목
+      cols.forEach(c=>{
+        if(c.t==='c'){
+          h+=md[c.k]?`<td class="ck-o">O</td>`:`<td class="ck-x">-</td>`;
+        }else if(c.t==='n'){
+          const v=parseInt(md[c.k])||0;
+          h+=v>0?`<td class="num">${v}</td>`:`<td class="ck-x">0</td>`;
+        }
+      });
+      h+=`<td class="score-col">${sc_>0?sc_:''}</td></tr>`;
+    });
+
+    // 합계 행
+    h+=`<tr class="total-row"><td class="name">합계</td>`;
+    // 출석 합계
+    h+=`<td>${M.filter(m=>(d[m.n]||empty()).at).length}</td>`;
+    // 나머지 항목 합계
+    cols.forEach(c=>{
+      let cnt=0,sum=0;
+      M.forEach(m=>{
+        const md=d[m.n]||empty();
+        if(c.t==='c'&&md[c.k])cnt++;
+        else if(c.t==='n'){const v=parseInt(md[c.k])||0;if(v>0){cnt++;sum+=v;}}
+      });
+      if(c.t==='c')h+=`<td>${cnt}</td>`;
+      else h+=`<td>${sum>0?sum:0}</td>`;
+    });
+    h+=`<td class="score-col">${ts.toLocaleString()}</td></tr>`;
+
+    h+=`</table></div>`;
+  }
+
+  h+=`<div class="ft">`;
+  if(state.url){
+    h+=`<button class="bp" id="sync-btn" onclick="syncSheet()">${syncBtnHTML()}</button>`;
+    h+=`<button class="bo" onclick="exportCSV()"><svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3" stroke="#1e2a1f" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>`;
+  }else h+=`<button class="bp" onclick="exportCSV()">CSV 다운로드</button>`;
+  h+=`</div>`;
+
+  document.getElementById('app').innerHTML=h;
+  requestAnimationFrame(()=>{const tb=document.getElementById('tabbar');const a=tb?.querySelector('.on');if(a)a.scrollIntoView({inline:'center',behavior:'auto'});});
+}
+
+function renderSetup(){
+  const hasUrl=!!state.url;
+
+  let h=`<div class="setup"><div class="setup-c">
+    <div style="font-size:38px;margin-bottom:4px">⛪</div>
+    <h1>${P_LABEL} 체크리스트</h1>`;
+
+  if(hasUrl){
+    // ─── URL이 저장된 상태 ───
+    h+=`<div style="background:#e8f5e9;border-radius:10px;padding:12px;margin-bottom:12px;text-align:left">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+        <span style="font-size:11px;color:#2e7d32;font-weight:700">✓ 연결됨</span>
+        <span style="font-size:10px;color:#2e7d32">시트 URL탭에 저장됨</span>
+      </div>
+      <div style="font-size:10px;color:#1e2a1f;word-break:break-all;line-height:1.4;background:#fff;padding:8px;border-radius:6px;margin-top:4px">${state.url}</div>
+    </div>
+    <button class="bp" style="width:100%;margin-bottom:12px;padding:14px;font-size:16px" onclick="goToApp()">체크리스트 시작 →</button>
+    <div style="border-top:1px solid #e0ddd4;padding-top:12px;margin-top:4px;text-align:left">
+      <div style="font-size:12px;color:#6b6558;font-weight:700;margin-bottom:6px">URL 변경</div>
+      <input id="url-input" placeholder="새 Apps Script URL 입력..." value="" style="width:100%;padding:10px;border:2px solid #e0ddd4;border-radius:8px;font-size:12px;outline:none;margin-bottom:6px;box-sizing:border-box">
+      <div style="display:flex;gap:6px">
+        <button onclick="saveUrl()" style="flex:1;padding:10px;border:none;border-radius:8px;background:#1a237e;color:#fff;font-size:13px;font-weight:700;cursor:pointer">URL 저장</button>
+        <button onclick="clearUrl()" style="flex:1;padding:10px;border:2px solid #e0ddd4;border-radius:8px;background:#fff;font-size:13px;font-weight:700;color:#c0392b;cursor:pointer">연동 해제</button>
+      </div>
+    </div>
+    <div style="border-top:1px solid #e0ddd4;padding-top:12px;margin-top:12px;text-align:left">
+      <div style="font-size:12px;color:#1a237e;font-weight:700;margin-bottom:4px">41교구 통합 시트 연동</div>
+      <div id="dash-url-status" style="font-size:10px;color:#908caa;margin-bottom:6px"></div>
+      <input id="dash-url-input" placeholder="41교구 구역보고서_DATA 의 Apps Script URL" value="" style="width:100%;padding:10px;border:2px solid #ddd8ef;border-radius:8px;font-size:12px;outline:none;margin-bottom:6px;box-sizing:border-box">
+      <button onclick="saveDashUrl()" style="width:100%;padding:10px;border:none;border-radius:8px;background:#1a237e;color:#fff;font-size:13px;font-weight:700;cursor:pointer">41교구 URL 저장</button>
+      <p style="font-size:10px;color:#908caa;margin-top:4px">저장하면 구역 데이터가 통합시트에도 자동 전송됩니다</p>
+    </div>`;
+  }else{
+    // ─── 최초 설정 ───
+    h+=`<p style="font-size:13px;color:#6b6558;line-height:1.5;margin-bottom:16px">구글 시트 연동을 위한<br>Apps Script URL을 입력하세요</p>
+    <input id="url-input" placeholder="https://script.google.com/macros/s/..." value="" style="width:100%;padding:12px;border:2px solid #e0ddd4;border-radius:10px;font-size:13px;outline:none;margin-bottom:10px;box-sizing:border-box">
+    <button onclick="saveUrl()" style="width:100%;padding:13px;border:none;border-radius:12px;background:#1a237e;color:#fff;font-size:15px;font-weight:700;cursor:pointer;margin-bottom:6px">URL 저장</button>
+    <p style="font-size:11px;color:#8a8578;margin-bottom:12px">저장 시 구글 시트 URL 탭에도 자동 기록됩니다</p>
+    <button style="background:none;border:none;color:#8a8578;font-size:12px;cursor:pointer;text-decoration:underline" onclick="skipSetup()">연동 없이 사용</button>`;
+  }
+
+  h+=`<details class="guide"><summary>Apps Script 세팅 가이드</summary>
+    <p><b>1.</b> 구글 시트 → 확장 프로그램 → Apps Script</p>
+    <p><b>2.</b> apps-script-code.js 코드 전체 교체 → 저장</p>
+    <p><b>3.</b> 배포 → 새 배포 → 웹 앱 / 본인 / 모든 사용자</p>
+  </details>
+  </div></div>`;
+
+  document.getElementById('app').innerHTML=h;
+  // 41교구 URL 상태 표시
+  if(hasUrl){
+    (async()=>{
+      const du=await sget('dash41:url');
+      const el=document.getElementById('dash-url-status');
+      if(el)el.innerHTML=du&&du.length>10?'<span style="color:#2e7d32">✓ 연결됨</span>':'<span style="color:#e65100">미연결</span>';
+    })();
+  }
+}
+
+function syncBtnHTML(){return '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" style="margin-right:6px"><path d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>구글 시트 저장';}
+
+async function syncSheet(){
+  if(!state.url)return toast('URL이 없습니다');
+  const btn=document.getElementById('sync-btn');
+  if(btn){btn.disabled=true;btn.textContent='저장 중...';}
+  const d=state.data;
+
+  // 수정된 구역원(touched) + 데이터 있는 구역원 모두 포함
+  const targets=state.members.filter(m=>state.touched.has(m.n)||hasFilled(d[m.n]));
+  const rows=targets.map(m=>{
+    const md=d[m.n]||empty();
+    const r={report_date:state.week,parish_id:P_ID,member_name:m.n,role:m.r,total_score:score(md),recorded_by:'모바일앱'};
+    ITEMS.forEach(it=>{const key=MAP_TO_SHEET[it.k];if(it.t==='c')r[key]=md[it.k]?'O':'X';else if(it.t==='n')r[key]=parseInt(md[it.k])||0;});
+    return r;
+  });
+  if(rows.length===0){toast('입력된 데이터가 없습니다');if(btn){btn.disabled=false;btn.innerHTML=syncBtnHTML();}return;}
+  try{
+    // 1. 구역 시트에 저장
+    await fetch(state.url,{
+      method:'POST',redirect:'follow',
+      headers:{'Content-Type':'text/plain;charset=utf-8'},
+      body:JSON.stringify({action:'sync',rows})
+    });
+
+    // 2. 41교구 통합 시트에도 저장
+    const dashUrl=await sget('dash41:url');
+    if(dashUrl&&dashUrl.length>10){
+      try{
+        await fetch(dashUrl,{
+          method:'POST',redirect:'follow',
+          headers:{'Content-Type':'text/plain;charset=utf-8'},
+          body:JSON.stringify({action:'sync',rows})
+        });
+      }catch(e){}
+    }
+
+    toast(`${rows.length}명 저장 완료! ✓`);
+    state.unsaved=false;
+    state.touched=new Set();
+    const uel=document.getElementById('unsaved-badge');
+    if(uel)uel.style.display='none';
+    await sset(SK(state.week),JSON.stringify(state.data));
+    await markWeekSaved(state.week);
+  }catch{toast('실패 — 다시 시도해주세요');}
+  if(btn){btn.disabled=false;btn.innerHTML=syncBtnHTML();}
+}
+
+function exportCSV(){
+  const d=state.data,hd='날짜,교구,이름,역할,출석,성경읽기,성경쓰기,성경타이핑,암송,전도,구역봉사,주일봉사,양육,양화진안내,환경보호,구역모임장소,겨울방학성경읽기,성경통독수련회,총점';
+  const rows=state.members.filter(m=>hasFilled(d[m.n])).map(m=>{const md=d[m.n]||empty();return [state.week,P_ID,m.n,m.r,md.at?'O':'X',md.br||0,md.bw||0,md.bt||0,md.me?'O':'X',md.ev?'O':'X',md.ds?'O':'X',md.ss?'O':'X',md.nu?'O':'X',md.mg?'O':'X',md.en?'O':'X',md.mp?'O':'X',md.wb||0,md.bm?'O':'X',score(md)].join(',');});
+  if(rows.length===0){toast('입력된 데이터가 없습니다');return;}
+  const csv='\uFEFF'+[hd,...rows].join('\n');const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8;'}));a.download=`${P_LABEL}_${state.week}.csv`;a.click();toast('CSV 다운로드 완료!');
+}
+
+// URL 저장 (로컬 + 시트 URL탭)
+async function saveUrl(){
+  const el=document.getElementById('url-input');
+  const u=el?el.value.trim():'';
+  if(!u){toast('URL을 입력해주세요');return;}
+  if(!u.startsWith('https://script.google.com/')){toast('올바른 Apps Script URL이 아닙니다');return;}
+
+  // 1. 로컬에 저장
+  state.url=u;
+  await sset(UK,u);
+
+  // 2. Apps Script에 ping → URL 탭에 자동 저장됨
+  try{
+    const res=await fetch(u+'?action=ping',{redirect:'follow'});
+    const text=await res.text();
+    if(!text.startsWith('<')){
+      toast('URL 저장 완료! (시트 URL탭에 기록됨)');
+    }else{
+      toast('URL 저장됨 (시트 연결 확인 필요)');
+    }
+  }catch(e){
+    toast('URL 저장됨 (시트 연결은 다음에 확인)');
+  }
+
+  // 설정 화면 갱신 (저장된 상태로)
+  render();
+}
+
+// 체크리스트 시작 (saveSetup 호환)
+async function saveSetup(){await saveUrl();}
+async function goToApp(){state.ready=true;await loadMembers();await loadWeek();}
+async function clearUrl(){state.url='';await sset(UK,'');toast('연동 해제됨');render();}
+
+async function saveDashUrl(){
+  const el=document.getElementById('dash-url-input');
+  const u=el?el.value.trim():'';
+  if(!u){toast('URL을 입력해주세요');return;}
+  if(!u.startsWith('https://script.google.com/')){toast('올바른 URL이 아닙니다');return;}
+
+  // 1. 로컬에 41교구 URL 저장
+  await sset('dash41:url',u);
+
+  // 2. 41교구 시트에 ping (URL탭 자동 저장)
+  try{
+    await fetch(u+'?action=ping',{redirect:'follow'});
+  }catch(e){}
+
+  // 3. 41교구 시트의 URL탭에 4133구역 정보 등록
+  if(state.url){
+    try{
+      await fetch(u,{
+        method:'POST',
+        redirect:'follow',
+        headers:{'Content-Type':'text/plain;charset=utf-8'},
+        body:JSON.stringify({
+          action:'setUrl',
+          parish_id:P_ID,
+          url:state.url,
+          sheet_name:'2026년 구역보고서('+P_LABEL+')_구역용_DATA'
+        })
+      });
+      toast('41교구 연동 완료! ('+P_LABEL+' URL 등록됨)');
+    }catch(e){
+      toast('41교구 URL 저장됨 (교구 등록은 재시도 필요)');
+    }
+  }else{
+    toast('41교구 URL 저장됨 (구역 URL 먼저 설정 필요)');
+  }
+  render();
+}
+async function skipSetup(){state.url='';await sset(UK,'');state.ready=true;state.members=[...FALLBACK_MEMBERS];await sset(MK,JSON.stringify(state.members));await loadWeek();}
+function showSetup(){state.ready=false;render();}
+
+// ═══ INIT (자동 로그인) ═══
+(async function(){
+  // 로딩 화면 즉시 표시
+  document.getElementById('app').innerHTML='<div style="min-height:100vh;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:8px"><div style="font-size:38px">⛪</div><div style="font-size:16px;font-weight:700;color:#1e2a1f">'+P_LABEL+' 체크리스트</div><div style="font-size:12px;color:#908caa">불러오는 중...</div></div>';
+
+  await loadSavedWeeks();
+  const url=await sget(UK);
+
+  if(url&&url.length>10){
+    // URL 있음 → 자동 로그인 (설정 화면 건너뜀)
+    state.url=url;
+    state.ready=true;
+    await loadMembers();
+    await loadWeek();
+  }else{
+    // URL 없음 → 설정 화면
+    state.ready=false;
+    render();
+  }
+})();
+</script>
