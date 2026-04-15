@@ -85,6 +85,9 @@ table.rt .att{text-align:left;font-size:8px;color:#555;max-width:160px;white-spa
 const PARISHES=['4111','4112','4113','4121','4122','4131','4132','4133','4134','4141','4151'];
 const DK='dash41:url';
 
+// ═══ 게이트웨이 URL (41교구 통합 시트의 Apps Script URL) ═══
+const GATEWAY_URL=''; // ← 41교구 Apps Script 배포 URL을 넣어주세요
+
 const COLS=[
   {k:'attendance',l:'출석',p:20,t:'c',s:['인원','합산']},
   {k:'bible_read',l:'성경읽기',p:1,t:'n',s:['장','합산']},
@@ -207,31 +210,25 @@ function _render(){
   const wk=sundays.find(s=>s.k===S.week);
   const ag=calc();
 
-  // 설정 화면 (URL 미설정 또는 설정 열기)
+  // 설정 화면
   if(!S.url||S.showSetup){
     let sh=`<div class="su"><h2 style="margin-bottom:8px">2026 1학기 41교구 구역보고서 화면</h2>`;
 
     if(S.url){
-      // URL 저장된 상태
-      sh+=`<div class="cur"><b>✓ 연결됨 (41교구 통합시트)</b>${S.url}</div>
+      sh+=`<div class="cur"><b>✓ 연결됨</b></div>
         <button style="width:100%;padding:12px;border:none;border-radius:10px;background:linear-gradient(135deg,#1a1a2e,#16213e);color:#fff;font-size:15px;font-weight:700;cursor:pointer;margin-bottom:10px" onclick="S.showSetup=false;render()">보고서 화면으로 →</button>
-        <div style="border-top:1px solid #ddd8ef;padding-top:12px;margin-top:4px;text-align:left">
-          <div style="font-size:12px;color:#908caa;font-weight:700;margin-bottom:6px">URL 변경</div>
-          <input id="url-in" placeholder="새 URL 입력..." value="">
-          <div style="display:flex;gap:6px;margin-top:2px">
-            <button onclick="saveMainUrl()" style="flex:1;padding:9px;border:none;border-radius:8px;background:#1a237e;color:#fff;font-size:13px;font-weight:700;cursor:pointer">URL 저장</button>
-            <button onclick="S.url='';sset(DK,'');S.showSetup=false;toast('연동 해제');render()" style="flex:1;padding:9px;border:2px solid #ddd8ef;border-radius:8px;background:#fff;font-size:13px;font-weight:700;color:#c0392b;cursor:pointer">연동 해제</button>
-          </div>
-        </div>`;
+        <button onclick="clearDashUrl()" style="width:100%;padding:10px;border:2px solid #ddd8ef;border-radius:10px;background:#fff;font-size:13px;font-weight:600;color:#c0392b;cursor:pointer">연결 해제 (재인증)</button>`;
     }else{
-      // 최초 설정
-      sh+=`<p style="color:#908caa;font-size:13px;margin-bottom:12px">41교구 구역보고서_DATA 의<br>Apps Script URL을 입력하세요</p>
-        <input id="url-in" placeholder="https://script.google.com/macros/s/...">
-        <br><button onclick="saveMainUrl()">URL 저장</button>
-        <p style="font-size:10px;color:#908caa;margin-top:8px">저장 시 시트 URL 탭에도 자동 기록됩니다</p>`;
+      sh+=`<p style="color:#908caa;font-size:13px;margin-bottom:16px">관리자 접속코드를 입력하세요</p>
+        <div id="dash-error" style="display:none;color:#c0392b;font-size:12px;font-weight:600;margin-bottom:8px"></div>
+        <input id="dash-code" type="text" maxlength="20" placeholder="접속코드 입력" autocomplete="off" style="width:100%;padding:14px;border:2px solid #ddd8ef;border-radius:12px;font-size:18px;font-weight:700;text-align:center;outline:none;margin-bottom:10px;letter-spacing:3px">
+        <button id="dash-auth-btn" onclick="dashAuth()" style="width:100%;padding:14px;border:none;border-radius:12px;background:linear-gradient(135deg,#1a1a2e,#16213e);color:#fff;font-size:16px;font-weight:700;cursor:pointer">접속</button>
+        <p style="font-size:10px;color:#908caa;margin-top:12px">접속코드는 목사님 또는 관리자에게 문의하세요</p>`;
     }
     sh+=`</div>`;
     document.getElementById('app').innerHTML=sh;
+    const codeEl=document.getElementById('dash-code');
+    if(codeEl){codeEl.focus();codeEl.addEventListener('keydown',function(e){if(e.key==='Enter')dashAuth();});}
     return;
   }
 
@@ -332,29 +329,37 @@ function _render(){
   requestAnimationFrame(()=>{const a=document.querySelector('.tabs .on');if(a)a.scrollIntoView({inline:'center',behavior:'auto'});});
 }
 
-async function saveMainUrl(){
-  const el=document.getElementById('url-in');const u=el?el.value.trim():'';
-  if(!u)return toast('URL을 입력해주세요');
-  if(!u.startsWith('https://script.google.com/'))return toast('올바른 Apps Script URL이 아닙니다');
-  S.url=u;await sset(DK,u);
+async function dashAuth(){
+  const el=document.getElementById('dash-code');
+  const errEl=document.getElementById('dash-error');
+  const btn=document.getElementById('dash-auth-btn');
+  if(!el)return;
+  const code=el.value.trim();
+  if(!code){if(errEl){errEl.textContent='접속코드를 입력해주세요';errEl.style.display='block';}return;}
+
+  let gw=GATEWAY_URL;
+  if(!gw||gw.length<10){gw=await sget('ch:gateway');if(!gw||gw.length<10){if(errEl){errEl.textContent='게이트웨이 URL 미설정 — 관리자 문의';errEl.style.display='block';}return;}}
+
+  if(btn){btn.disabled=true;btn.textContent='인증 중...';}
+  if(errEl)errEl.style.display='none';
+
   try{
-    // URL탭에 명시적으로 저장 요청
-    await fetch(u,{
-      method:'POST',redirect:'follow',
-      headers:{'Content-Type':'text/plain;charset=utf-8'},
-      body:JSON.stringify({
-        action:'setUrl',
-        parish_id:'통합',
-        url:u,
-        sheet_name:'2026 1학기 41교구 구역보고서_DATA'
-      })
-    });
-    // ping으로 배포URL도 자동 저장
-    await fetch(u+'?action=ping',{redirect:'follow'});
-    toast('URL 저장 완료! (시트 URL탭에 기록됨)');
-  }catch{toast('URL 로컬 저장됨 (시트 확인 필요)');}
-  S.showSetup=false;render();
+    const res=await fetch(gw+'?action=auth&code='+encodeURIComponent(code),{redirect:'follow'});
+    const text=await res.text();
+    if(text.startsWith('<'))throw new Error('연결 실패');
+    const json=JSON.parse(text);
+    if(json.status==='ok'&&json.script_url&&json.script_url.length>10){
+      S.url=json.script_url;
+      await sset(DK,json.script_url);
+      await sset('ch:gateway',gw);
+      toast('접속 성공! '+json.parish_name);
+      S.showSetup=false;render();return;
+    }else{if(errEl){errEl.textContent=json.message||'인증 실패';errEl.style.display='block';}}
+  }catch(e){if(errEl){errEl.textContent='서버 연결 실패';errEl.style.display='block';}}
+  if(btn){btn.disabled=false;btn.textContent='접속';}
 }
+
+async function clearDashUrl(){S.url='';await sset(DK,'');toast('연결 해제됨');S.showSetup=false;render();}
 
 // INIT: 자동 로그인
 (async function(){

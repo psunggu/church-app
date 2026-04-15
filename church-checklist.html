@@ -126,6 +126,11 @@ body{max-width:520px;margin:0 auto;padding-bottom:80px;min-height:100vh;min-heig
 
 <script>
 const P_ID='4133',P_LABEL='4133구역';
+
+// ═══ 게이트웨이 URL (41교구 통합 시트의 Apps Script URL) ═══
+// 이 URL만 HTML에 노출 — 접속코드 없이는 데이터 접근 불가
+const GATEWAY_URL=''; // ← 41교구 Apps Script 배포 URL을 넣어주세요
+
 const FALLBACK_MEMBERS=[
   {n:'성미선',r:'구역장'},{n:'박성규',r:'권찰'},{n:'고요한',r:'구역원'},{n:'김성이B',r:'구역원'},
   {n:'김진선C',r:'구역원'},{n:'박종민A',r:'구역원'},{n:'범하나',r:'구역원'},{n:'이상규',r:'구역원'},
@@ -515,54 +520,28 @@ function renderSetup(){
     <h1>${P_LABEL} 체크리스트</h1>`;
 
   if(hasUrl){
-    // ─── URL이 저장된 상태 ───
-    h+=`<div style="background:#e8f5e9;border-radius:10px;padding:12px;margin-bottom:12px;text-align:left">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
-        <span style="font-size:11px;color:#2e7d32;font-weight:700">✓ 연결됨</span>
-        <span style="font-size:10px;color:#2e7d32">시트 URL탭에 저장됨</span>
-      </div>
-      <div style="font-size:10px;color:#1e2a1f;word-break:break-all;line-height:1.4;background:#fff;padding:8px;border-radius:6px;margin-top:4px">${state.url}</div>
+    // ─── 연결된 상태 ───
+    h+=`<div style="background:#e8f5e9;border-radius:10px;padding:12px;margin-bottom:12px;text-align:center">
+      <span style="font-size:13px;color:#2e7d32;font-weight:700">✓ 연결됨</span>
     </div>
     <button class="bp" style="width:100%;margin-bottom:12px;padding:14px;font-size:16px" onclick="goToApp()">체크리스트 시작 →</button>
-    <div style="border-top:1px solid #e0ddd4;padding-top:12px;margin-top:4px;text-align:left">
-      <div style="font-size:12px;color:#6b6558;font-weight:700;margin-bottom:6px">URL 변경</div>
-      <input id="url-input" placeholder="새 Apps Script URL 입력..." value="" style="width:100%;padding:10px;border:2px solid #e0ddd4;border-radius:8px;font-size:12px;outline:none;margin-bottom:6px;box-sizing:border-box">
-      <div style="display:flex;gap:6px">
-        <button onclick="saveUrl()" style="flex:1;padding:10px;border:none;border-radius:8px;background:#1a237e;color:#fff;font-size:13px;font-weight:700;cursor:pointer">URL 저장</button>
-        <button onclick="clearUrl()" style="flex:1;padding:10px;border:2px solid #e0ddd4;border-radius:8px;background:#fff;font-size:13px;font-weight:700;color:#c0392b;cursor:pointer">연동 해제</button>
-      </div>
-    </div>
-    <div style="border-top:1px solid #e0ddd4;padding-top:12px;margin-top:12px;text-align:left">
-      <div style="font-size:12px;color:#1a237e;font-weight:700;margin-bottom:4px">41교구 통합 시트 연동</div>
-      <div id="dash-url-status" style="font-size:10px;color:#908caa;margin-bottom:6px"></div>
-      <input id="dash-url-input" placeholder="41교구 구역보고서_DATA 의 Apps Script URL" value="" style="width:100%;padding:10px;border:2px solid #ddd8ef;border-radius:8px;font-size:12px;outline:none;margin-bottom:6px;box-sizing:border-box">
-      <button onclick="saveDashUrl()" style="width:100%;padding:10px;border:none;border-radius:8px;background:#1a237e;color:#fff;font-size:13px;font-weight:700;cursor:pointer">41교구 URL 저장</button>
-      <p style="font-size:10px;color:#908caa;margin-top:4px">저장하면 구역 데이터가 통합시트에도 자동 전송됩니다</p>
-    </div>`;
+    <button onclick="clearUrl()" style="width:100%;padding:10px;border:2px solid #e0ddd4;border-radius:10px;background:#fff;font-size:13px;font-weight:600;color:#c0392b;cursor:pointer">연결 해제 (재인증)</button>`;
   }else{
-    // ─── 최초 설정 ───
-    h+=`<p style="font-size:13px;color:#6b6558;line-height:1.5;margin-bottom:16px">구글 시트 연동을 위한<br>Apps Script URL을 입력하세요</p>
-    <input id="url-input" placeholder="https://script.google.com/macros/s/..." value="" style="width:100%;padding:12px;border:2px solid #e0ddd4;border-radius:10px;font-size:13px;outline:none;margin-bottom:10px;box-sizing:border-box">
-    <button onclick="saveUrl()" style="width:100%;padding:13px;border:none;border-radius:12px;background:#1a237e;color:#fff;font-size:15px;font-weight:700;cursor:pointer;margin-bottom:6px">URL 저장</button>
-    <p style="font-size:11px;color:#8a8578;margin-bottom:12px">저장 시 구글 시트 URL 탭에도 자동 기록됩니다</p>
-    <button style="background:none;border:none;color:#8a8578;font-size:12px;cursor:pointer;text-decoration:underline" onclick="skipSetup()">연동 없이 사용</button>`;
+    // ─── 접속코드 입력 ───
+    h+=`<p style="font-size:13px;color:#6b6558;line-height:1.5;margin-bottom:16px">접속코드를 입력하세요</p>
+    <div id="auth-error" style="display:none;color:#c0392b;font-size:12px;font-weight:600;margin-bottom:8px;text-align:center"></div>
+    <input id="access-code" type="text" inputmode="numeric" maxlength="10" placeholder="접속코드 입력" autocomplete="off" style="width:100%;padding:14px;border:2px solid #e0ddd4;border-radius:12px;font-size:18px;font-weight:700;text-align:center;outline:none;margin-bottom:10px;box-sizing:border-box;letter-spacing:4px">
+    <button id="auth-btn" onclick="authWithCode()" style="width:100%;padding:14px;border:none;border-radius:12px;background:linear-gradient(135deg,#1e2a1f,#3d5a3a);color:#fff;font-size:16px;font-weight:700;cursor:pointer">접속</button>
+    <p style="font-size:10px;color:#908caa;margin-top:12px;line-height:1.5">접속코드는 구역장에게 문의하세요</p>`;
   }
-
-  h+=`<details class="guide"><summary>Apps Script 세팅 가이드</summary>
-    <p><b>1.</b> 구글 시트 → 확장 프로그램 → Apps Script</p>
-    <p><b>2.</b> apps-script-code.js 코드 전체 교체 → 저장</p>
-    <p><b>3.</b> 배포 → 새 배포 → 웹 앱 / 본인 / 모든 사용자</p>
-  </details>
-  </div></div>`;
-
+  h+=`</div></div>`;
   document.getElementById('app').innerHTML=h;
-  // 41교구 URL 상태 표시
-  if(hasUrl){
-    (async()=>{
-      const du=await sget('dash41:url');
-      const el=document.getElementById('dash-url-status');
-      if(el)el.innerHTML=du&&du.length>10?'<span style="color:#2e7d32">✓ 연결됨</span>':'<span style="color:#e65100">미연결</span>';
-    })();
+
+  // 접속코드 입력 시 엔터키 지원
+  const codeEl=document.getElementById('access-code');
+  if(codeEl){
+    codeEl.focus();
+    codeEl.addEventListener('keydown',function(e){if(e.key==='Enter')authWithCode();});
   }
 }
 
@@ -621,95 +600,82 @@ function exportCSV(){
   const csv='\uFEFF'+[hd,...rows].join('\n');const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8;'}));a.download=`${P_LABEL}_${state.week}.csv`;a.click();toast('CSV 다운로드 완료!');
 }
 
-// URL 저장 (로컬 + 시트 URL탭)
-async function saveUrl(){
-  const el=document.getElementById('url-input');
-  const u=el?el.value.trim():'';
-  if(!u){toast('URL을 입력해주세요');return;}
-  if(!u.startsWith('https://script.google.com/')){toast('올바른 Apps Script URL이 아닙니다');return;}
+// ═══ 접속코드 인증 ═══
+async function authWithCode(){
+  const el=document.getElementById('access-code');
+  const errEl=document.getElementById('auth-error');
+  const btn=document.getElementById('auth-btn');
+  if(!el)return;
+  const code=el.value.trim();
+  if(!code){if(errEl){errEl.textContent='접속코드를 입력해주세요';errEl.style.display='block';}return;}
 
-  // 1. 로컬에 저장
-  state.url=u;
-  await sset(UK,u);
+  // 게이트웨이 URL 확인
+  let gw=GATEWAY_URL;
+  if(!gw||gw.length<10){
+    // 로컬에 저장된 게이트웨이 확인
+    gw=await sget('ch:gateway');
+    if(!gw||gw.length<10){
+      if(errEl){errEl.textContent='게이트웨이 URL이 설정되지 않았습니다. 관리자에게 문의하세요.';errEl.style.display='block';}
+      return;
+    }
+  }
 
-  // 2. Apps Script에 ping → URL 탭에 자동 저장됨
+  if(btn){btn.disabled=true;btn.textContent='인증 중...';}
+  if(errEl)errEl.style.display='none';
+
   try{
-    const res=await fetch(u+'?action=ping',{redirect:'follow'});
+    const res=await fetch(gw+'?action=auth&code='+encodeURIComponent(code),{redirect:'follow'});
     const text=await res.text();
-    if(!text.startsWith('<')){
-      toast('URL 저장 완료! (시트 URL탭에 기록됨)');
+    if(text.startsWith('<')){throw new Error('연결 실패');}
+    const json=JSON.parse(text);
+
+    if(json.status==='ok'&&json.script_url&&json.script_url.length>10){
+      // 인증 성공 → URL 저장
+      state.url=json.script_url;
+      await sset(UK,json.script_url);
+      await sset('dash41:url',gw);
+      await sset('ch:gateway',gw);
+      await sset('ch:parish_name',json.parish_name||'');
+      toast('접속 성공! '+json.parish_name);
+      state.ready=true;
+      await loadMembers();
+      await loadWeek();
+      return;
     }else{
-      toast('URL 저장됨 (시트 연결 확인 필요)');
+      if(errEl){errEl.textContent=json.message||'인증 실패';errEl.style.display='block';}
     }
   }catch(e){
-    toast('URL 저장됨 (시트 연결은 다음에 확인)');
+    if(errEl){errEl.textContent='서버 연결 실패 — 다시 시도해주세요';errEl.style.display='block';}
   }
-
-  // 설정 화면 갱신 (저장된 상태로)
-  render();
+  if(btn){btn.disabled=false;btn.textContent='접속';}
 }
 
-// 체크리스트 시작 (saveSetup 호환)
-async function saveSetup(){await saveUrl();}
 async function goToApp(){state.ready=true;await loadMembers();await loadWeek();}
-async function clearUrl(){state.url='';await sset(UK,'');toast('연동 해제됨');render();}
-
-async function saveDashUrl(){
-  const el=document.getElementById('dash-url-input');
-  const u=el?el.value.trim():'';
-  if(!u){toast('URL을 입력해주세요');return;}
-  if(!u.startsWith('https://script.google.com/')){toast('올바른 URL이 아닙니다');return;}
-
-  // 1. 로컬에 41교구 URL 저장
-  await sset('dash41:url',u);
-
-  // 2. 41교구 시트에 ping (URL탭 자동 저장)
-  try{
-    await fetch(u+'?action=ping',{redirect:'follow'});
-  }catch(e){}
-
-  // 3. 41교구 시트의 URL탭에 4133구역 정보 등록
-  if(state.url){
-    try{
-      await fetch(u,{
-        method:'POST',
-        redirect:'follow',
-        headers:{'Content-Type':'text/plain;charset=utf-8'},
-        body:JSON.stringify({
-          action:'setUrl',
-          parish_id:P_ID,
-          url:state.url,
-          sheet_name:'2026년 구역보고서('+P_LABEL+')_구역용_DATA'
-        })
-      });
-      toast('41교구 연동 완료! ('+P_LABEL+' URL 등록됨)');
-    }catch(e){
-      toast('41교구 URL 저장됨 (교구 등록은 재시도 필요)');
-    }
-  }else{
-    toast('41교구 URL 저장됨 (구역 URL 먼저 설정 필요)');
-  }
+async function clearUrl(){
+  state.url='';
+  await sset(UK,'');
+  await sdel(UK);
+  toast('연결 해제됨');
+  state.ready=false;
   render();
 }
-async function skipSetup(){state.url='';await sset(UK,'');state.ready=true;state.members=[...FALLBACK_MEMBERS];await sset(MK,JSON.stringify(state.members));await loadWeek();}
 function showSetup(){state.ready=false;render();}
 
 // ═══ INIT (자동 로그인) ═══
 (async function(){
-  // 로딩 화면 즉시 표시
   document.getElementById('app').innerHTML='<div style="min-height:100vh;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:8px"><div style="font-size:38px">⛪</div><div style="font-size:16px;font-weight:700;color:#1e2a1f">'+P_LABEL+' 체크리스트</div><div style="font-size:12px;color:#908caa">불러오는 중...</div></div>';
 
   await loadSavedWeeks();
-  const url=await sget(UK);
 
+  // 로컬에 URL이 있으면 자동 로그인
+  const url=await sget(UK);
   if(url&&url.length>10){
-    // URL 있음 → 자동 로그인 (설정 화면 건너뜀)
     state.url=url;
     state.ready=true;
     await loadMembers();
     await loadWeek();
   }else{
-    // URL 없음 → 설정 화면
+    // URL 없음 → 접속코드 화면
     state.ready=false;
     render();
   }
