@@ -56,6 +56,8 @@ body{max-width:520px;margin:0 auto;padding-bottom:80px;min-height:100vh;min-heig
 .add-form select{height:38px;border:2px solid #e0ddd4;border-radius:8px;padding:0 8px;font-size:13px;outline:none;background:#fff}
 .add-form button{height:38px;padding:0 16px;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer}
 .add-ok{background:#3d5a3a;color:#fff}.add-cancel{background:#e4e1d8;color:#6b6558}
+.del-btn{width:100%;padding:8px;border:1px solid #e0ddd4;border-radius:8px;background:#fff;color:#c0392b;font-size:11px;font-weight:600;cursor:pointer;margin-top:10px;transition:all .15s}
+.del-btn:active{background:#fde8e8}
 .ft{position:fixed;bottom:0;left:0;right:0;padding:10px 16px;padding-bottom:max(10px,env(safe-area-inset-bottom));background:rgba(244,242,237,.95);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);border-top:1px solid #d4d0c6;z-index:30;display:flex;gap:8px;justify-content:center}
 .bp{flex:1;display:flex;align-items:center;justify-content:center;padding:12px 14px;border:none;border-radius:12px;background:linear-gradient(135deg,#1e2a1f,#3d5a3a);color:#fff;font-size:14px;font-weight:700;cursor:pointer}.bp:disabled{opacity:.5}
 .toast{position:fixed;bottom:76px;left:50%;transform:translateX(-50%);padding:9px 20px;border-radius:18px;background:rgba(30,42,31,.92);color:#fff;font-size:13px;font-weight:600;z-index:40;white-space:nowrap;opacity:0;transition:opacity .2s}.toast.show{opacity:1}
@@ -107,11 +109,20 @@ var ITEMS=[
 ];
 var GROUPS=[{l:'📖 성경',g:1},{l:'🙏 신앙생활',g:2},{l:'🤝 봉사',g:3},{l:'⭐ 특별항목',g:4}];
 
+// KST 현재 시간
+function kstNow(){var now=new Date();var utc=now.getTime()+now.getTimezoneOffset()*60000;return new Date(utc+9*3600000);}
+function kstDateStr(){var k=kstNow();return k.getFullYear()+'년 '+(k.getMonth()+1)+'월 '+k.getDate()+'일 ('+['일','월','화','수','목','금','토'][k.getDay()]+') '+String(k.getHours()).padStart(2,'0')+':'+String(k.getMinutes()).padStart(2,'0');}
+
 var sundays=[];
-(function(){var now=new Date();for(var i=-12;i<=4;i++){var d=new Date(now);var day=d.getDay();d.setDate(d.getDate()-day+(day===0?0:7)+i*7);d.setHours(0,0,0,0);var m=d.getMonth()+1,dt=d.getDate();sundays.push({k:d.getFullYear()+'-'+String(m).padStart(2,'0')+'-'+String(dt).padStart(2,'0'),l:m+'/'+dt,ts:d.getTime()});}})();
+(function(){var now=kstNow();for(var i=-12;i<=4;i++){var d=new Date(now);var day=d.getDay();d.setDate(d.getDate()-day+(day===0?0:7)+i*7);d.setHours(0,0,0,0);var m=d.getMonth()+1,dt=d.getDate();sundays.push({k:d.getFullYear()+'-'+String(m).padStart(2,'0')+'-'+String(dt).padStart(2,'0'),l:m+'/'+dt,ts:d.getTime()});}})();
 
 var S={pid:'',pname:'',role:'',week:'',data:{},members:[],expanded:null,view:'list',ready:false,loading:false,addingMember:false,unsaved:false,touched:{},lastMod:null};
-S.week=(function(){var c=sundays[0],now=Date.now();for(var i=0;i<sundays.length;i++){if(Math.abs(sundays[i].ts-now)<Math.abs(c.ts-now))c=sundays[i];}return c.k;})();
+S.week=(function(){
+  var now=kstNow(),todayMs=new Date(now.getFullYear(),now.getMonth(),now.getDate()).getTime();
+  var best=sundays[0],bestDiff=Math.abs(sundays[0].ts-todayMs);
+  for(var i=1;i<sundays.length;i++){var diff=Math.abs(sundays[i].ts-todayMs);if(diff<bestDiff){best=sundays[i];bestDiff=diff;}}
+  return best.k;
+})();
 
 function empty(){var d={};ITEMS.forEach(function(i){d[i.k]=i.t==='c'?false:'';});return d;}
 function emptyAll(){var o={};S.members.forEach(function(m){o[m.n]=empty();});return o;}
@@ -158,6 +169,18 @@ async function addMember(){
   if(!name){toast('이름 입력');return;}if(S.members.some(function(m){return m.n===name;})){toast('이미 등록');return;}
   var r=await sb.from('members').insert({parish_id:S.pid,name:name,role:role});
   if(!r.error){S.members.push({n:name,r:role});S.data[name]=empty();S.addingMember=false;toast(name+' 추가');render();}
+}
+async function delMember(name){
+  if(!confirm(name+' 구역원을 삭제하시겠습니까?\n\n해당 구역원의 보고서 데이터도 함께 삭제됩니다.'))return;
+  var r1=await sb.from('members').delete().eq('parish_id',S.pid).eq('name',name);
+  var r2=await sb.from('reports').update({state:'Delete'}).eq('parish_id',S.pid).eq('member_name',name);
+  if(!r1.error){
+    S.members=S.members.filter(function(m){return m.n!==name;});
+    delete S.data[name];
+    S.expanded=null;
+    toast(name+' 삭제 완료');
+    render();
+  }else{toast('삭제 실패: '+r1.error.message);}
 }
 
 function updateSummary(){var d=S.data,M=S.members,ac=M.filter(function(m){return d[m.n]&&d[m.n].at;}).length,ts=M.reduce(function(s,m){return s+score(d[m.n]);},0),att=M.filter(function(m){return d[m.n]&&d[m.n].at;}).map(function(m){return m.n;});var a=document.getElementById('s-ac'),t=document.getElementById('s-ts'),at=document.getElementById('s-att');if(a)a.textContent=ac;if(t)t.textContent=ts.toLocaleString();if(at){at.innerHTML=att.length>0?'<b>참석: </b>'+att.join(', '):'';at.style.display=att.length>0?'block':'none';}}
@@ -224,7 +247,7 @@ function _render(){
   var ac=M.filter(function(m){return d[m.n]&&d[m.n].at;}).length;
   var ts=M.reduce(function(s,m){return s+score(d[m.n]);},0);
   var att=M.filter(function(m){return d[m.n]&&d[m.n].at;}).map(function(m){return m.n;});
-  var h='<div class="hd"><div><h1>'+S.pname+'</h1><p>'+(wk?wk.l:'')+' 주일</p></div><button onclick="doLogout()"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#b8b3a6" stroke-width="1.5"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9"/></svg></button></div>';
+  var h='<div class="hd"><div><h1>'+S.pname+'</h1><p>'+(wk?wk.l:'')+' 주일 · <span style="font-size:10px;color:#7a9b70">'+kstDateStr()+'</span></p></div><button onclick="doLogout()"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#b8b3a6" stroke-width="1.5"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9"/></svg></button></div>';
   h+='<div class="tabs" id="tabbar">';for(var i=0;i<sundays.length;i++){var s=sundays[i];h+='<button class="'+(s.k===S.week?'on':'')+'" onclick="setWeek(\''+s.k+'\')">'+s.l+'</button>';}h+='</div>';
   if(S.loading){h+='<div style="text-align:center;padding:40px;color:#8a8578">불러오는 중...</div><div class="ft"><button class="bp" disabled>로딩...</button></div>';document.getElementById('app').innerHTML=h;requestAnimationFrame(function(){var a=document.querySelector('.tabs .on');if(a)a.scrollIntoView({inline:'center',behavior:'auto'});});return;}
   h+='<div class="sum"><div><div class="n" id="s-ac">'+ac+'</div><div class="l">출석 / '+M.length+'</div></div><div class="dv"></div><div><div class="n" id="s-ts">'+ts.toLocaleString()+'</div><div class="l">총점</div></div></div>';
@@ -240,6 +263,7 @@ function _render(){
       h+='<span class="sc" id="ms-'+CSS.escape(m.n)+'" style="display:'+(sc_>0?'':'none')+'">'+(sc_>0?sc_:'')+'</span>';
       h+='<svg class="arr" width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M6 9l6 6 6-6" stroke="#8a8578" stroke-width="2" stroke-linecap="round"/></svg></div><div class="dt">';
       GROUPS.forEach(function(g){var items=ITEMS.filter(function(it){return it.g===g.g;});h+='<div class="gh">'+g.l+'</div>';items.forEach(function(it){h+='<div class="ir"><div class="il">'+it.l+'<span>'+(it.t==='n'?it.u+'당 '+it.s+'점':it.s+'점')+'</span></div>';if(it.t==='c')h+='<button class="tb'+(md[it.k]?' on':'')+'" id="tb-'+CSS.escape(m.n)+'-'+it.k+'" onclick="ckItem(\''+en+'\',\''+it.k+'\')">'+(md[it.k]?'O':'X')+'</button>';else h+='<div class="nw"><button class="pm" onclick="numAdj(\''+en+'\',\''+it.k+'\',-1)">−</button><input class="ni" id="ni-'+CSS.escape(m.n)+'-'+it.k+'" type="number" inputmode="numeric" value="'+(md[it.k]||'')+'" placeholder="0" onchange="numSet(\''+en+'\',\''+it.k+'\',this.value)"><button class="pm" onclick="numAdj(\''+en+'\',\''+it.k+'\',1)">+</button></div>';h+='</div>';});});
+      h+='<button class="del-btn" onclick="delMember(\''+en+'\')">🗑 '+m.n+' 삭제</button>';
       h+='</div></div>';});
     h+='<div class="add-area">'+(S.addingMember?'<div class="add-form"><input id="add-name" placeholder="이름" style="flex:2"><select id="add-role"><option value="구역원">구역원</option><option value="구역장">구역장</option><option value="권찰">권찰</option></select><button class="add-ok" onclick="addMember()">추가</button><button class="add-cancel" onclick="hideAdd()">취소</button></div>':'<button class="add-btn" onclick="showAdd()">+ 구역원 추가</button>')+'</div>';
   }
