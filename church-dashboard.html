@@ -119,7 +119,7 @@ function _render(){
   var ag=calc();
   var h='<div class="hd"><div><h1>41교구 구역보고서</h1><p>'+(wk?wk.l:'')+' 주일</p></div><button onclick="doLogout()"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#908caa" stroke-width="1.5"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9"/></svg></button></div>';
   h+='<div class="tabs">';for(var i=0;i<sundays.length;i++){var s=sundays[i];h+='<button class="'+(s.k===D.week?'on':'')+'" onclick="setW(\''+s.k+'\')">'+s.l+'</button>';}h+='</div>';
-  h+='<div class="ctrl"><button class="c1" onclick="loadData()" '+(D.loading?'disabled':'')+'>'+( D.loading?'조회 중...':'📊 DATA 조회')+'</button>';if(D.data&&ag){var pDone=PARISHES.filter(function(p){return ag[p].total>0;}).length;h+='<span class="info">총 '+PARISHES.length+'개 구역 : '+pDone+'개 구역 입력 완료</span>';}h+='</div>';
+  h+='<div class="ctrl"><button class="c1" onclick="loadData()" '+(D.loading?'disabled':'')+'>'+( D.loading?'조회 중...':'📊 DATA 조회')+'</button>';if(D.data&&ag){var pDone=PARISHES.filter(function(p){return ag[p].total>0;}).length;h+='<span style="font-size:15px;color:#555">총 <b style="color:#1565c0;font-size:17px">'+PARISHES.length+'</b>개 구역 : <b style="color:#c0392b;font-size:17px">'+pDone+'</b>개 구역 입력 완료</span>';}h+='</div>';
   if(!D.data){h+='<div class="msg">주차 선택 → DATA 조회</div>';document.getElementById('app').innerHTML=h;requestAnimationFrame(function(){var a=document.querySelector('.tabs .on');if(a)a.scrollIntoView({inline:'center',behavior:'auto'});});return;}
   if(!ag||!D.data.length){h+='<div class="msg">데이터 없음</div>';document.getElementById('app').innerHTML=h;return;}
   var tAtt=D.data.filter(function(r){return r.attendance==='O';}).length,tScore=PARISHES.reduce(function(s,p){return s+ag[p].total;},0);
