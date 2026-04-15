@@ -59,6 +59,17 @@ body{max-width:520px;margin:0 auto;padding-bottom:80px;min-height:100vh;min-heig
 .ft{position:fixed;bottom:0;left:0;right:0;padding:10px 16px;padding-bottom:max(10px,env(safe-area-inset-bottom));background:rgba(244,242,237,.95);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);border-top:1px solid #d4d0c6;z-index:30;display:flex;gap:8px;justify-content:center}
 .bp{flex:1;display:flex;align-items:center;justify-content:center;padding:12px 14px;border:none;border-radius:12px;background:linear-gradient(135deg,#1e2a1f,#3d5a3a);color:#fff;font-size:14px;font-weight:700;cursor:pointer}.bp:disabled{opacity:.5}
 .toast{position:fixed;bottom:76px;left:50%;transform:translateX(-50%);padding:9px 20px;border-radius:18px;background:rgba(30,42,31,.92);color:#fff;font-size:13px;font-weight:600;z-index:40;white-space:nowrap;opacity:0;transition:opacity .2s}.toast.show{opacity:1}
+.rpt{padding:0 0 12px;overflow-x:auto;-webkit-overflow-scrolling:touch}
+.rpt table{border-collapse:collapse;font-size:11px;min-width:700px;width:100%}
+.rpt th{background:#2d3a2e;color:#e4dfcf;font-weight:700;padding:6px 4px;white-space:nowrap;position:sticky;top:0;z-index:2;border:1px solid #1e2a1f}
+.rpt th.col-name{position:sticky;left:0;z-index:3;min-width:60px}
+.rpt td{padding:5px 4px;text-align:center;border:1px solid #e0ddd4;white-space:nowrap}
+.rpt td.name{position:sticky;left:0;background:inherit;text-align:left;font-weight:700;font-size:12px;z-index:1;min-width:60px}
+.rpt tr:nth-child(odd){background:#fff}.rpt tr:nth-child(even){background:#f8f7f3}
+.rpt .ck-o{color:#2e7d32;font-weight:800}.rpt .ck-x{color:#ccc}
+.rpt .num{color:#1565c0;font-weight:700}
+.rpt .total-row{background:#f5f0e0!important;font-weight:800}.rpt .total-row td{border-top:2px solid #2d3a2e;font-size:12px}
+.rpt .score-col{background:rgba(61,90,58,.08);font-weight:800;color:#2d3a2e}
 </style>
 <div id="app"></div>
 <div id="toast" class="toast"></div>
@@ -219,7 +230,7 @@ function _render(){
   h+='<div class="sum"><div><div class="n" id="s-ac">'+ac+'</div><div class="l">출석 / '+M.length+'</div></div><div class="dv"></div><div><div class="n" id="s-ts">'+ts.toLocaleString()+'</div><div class="l">총점</div></div></div>';
   h+='<div class="att-bar" id="s-att" style="display:'+(att.length>0?'block':'none')+'"><b>참석: </b>'+att.join(', ')+'</div>';
   h+='<div style="display:flex;justify-content:space-between;padding:0 16px 4px;font-size:10px"><span id="last-mod" style="color:#908caa;display:none"></span><span id="unsaved-badge" style="color:#e65100;font-weight:700;display:'+(S.unsaved?'inline':'none')+'">● 미저장</span></div>';
-  h+='<div class="vtog"><button class="'+(S.view==='list'?'on':'')+'" onclick="setView(\'list\')">입력</button><button class="'+(S.view==='summary'?'on':'')+'" onclick="setView(\'summary\')">요약</button></div>';
+  h+='<div class="vtog"><button class="'+(S.view==='list'?'on':'')+'" onclick="setView(\'list\')">입력</button><button class="'+(S.view==='summary'?'on':'')+'" onclick="setView(\'summary\')">요약</button><button class="'+(S.view==='report'?'on':'')+'" onclick="setView(\'report\')">보고서</button></div>';
   if(S.view==='list'){
     h+='<div class="lh"><span>출석 체크 + 상세 입력</span><span>탭→펼치기</span></div>';
     M.forEach(function(m){var md=d[m.n]||empty(),sc_=score(md),fc=filled(md),o=S.expanded===m.n,en=esc(m.n);
@@ -233,6 +244,28 @@ function _render(){
     h+='<div class="add-area">'+(S.addingMember?'<div class="add-form"><input id="add-name" placeholder="이름" style="flex:2"><select id="add-role"><option value="구역원">구역원</option><option value="구역장">구역장</option><option value="권찰">권찰</option></select><button class="add-ok" onclick="addMember()">추가</button><button class="add-cancel" onclick="hideAdd()">취소</button></div>':'<button class="add-btn" onclick="showAdd()">+ 구역원 추가</button>')+'</div>';
   }
   if(S.view==='summary'){h+='<div class="sv" style="display:block">';ITEMS.forEach(function(it){var cnt=0,sum=0;M.forEach(function(m){var md=d[m.n]||empty();if(it.t==='c'&&md[it.k]){cnt++;sum+=it.s;}else if(it.t==='n'){var v=parseInt(md[it.k])||0;if(v>0){cnt++;sum+=v*it.s;}}});h+='<div class="sr"><div><div class="sn">'+it.l+'</div><div class="sm">'+cnt+'명</div></div><div><div class="sv2">'+sum.toLocaleString()+'</div><div class="sv3">점</div></div></div>';});h+='<div class="sr total"><div class="sn" style="font-size:15px">합계</div><div class="sv2" style="font-size:20px">'+ts.toLocaleString()+'점</div></div></div>';}
+  if(S.view==='report'){
+    var cols=ITEMS.filter(function(i){return i.k!=='at';});
+    h+='<div class="rpt"><table>';
+    h+='<tr><th class="col-name">이름</th><th>출석<br>(20)</th>';
+    cols.forEach(function(c){h+='<th>'+c.l+'<br>('+(c.t==='n'?c.u+'당'+c.s:c.s)+')</th>';});
+    h+='<th style="background:#1e2a1f">합계</th></tr>';
+    M.forEach(function(m){
+      var md=d[m.n]||empty(),sc_=score(md);
+      h+='<tr><td class="name">'+m.n+'</td>';
+      h+=md.at?'<td class="ck-o">O</td>':'<td class="ck-x">-</td>';
+      cols.forEach(function(c){
+        if(c.t==='c'){h+=md[c.k]?'<td class="ck-o">O</td>':'<td class="ck-x">-</td>';}
+        else{var v=parseInt(md[c.k])||0;h+=v>0?'<td class="num">'+v+'</td>':'<td class="ck-x">0</td>';}
+      });
+      h+='<td class="score-col">'+(sc_>0?sc_:'')+'</td></tr>';
+    });
+    h+='<tr class="total-row"><td class="name">합계</td>';
+    h+='<td>'+M.filter(function(m){return(d[m.n]||empty()).at;}).length+'</td>';
+    cols.forEach(function(c){var cnt=0,sum=0;M.forEach(function(m){var md=d[m.n]||empty();if(c.t==='c'&&md[c.k])cnt++;else if(c.t==='n'){var v=parseInt(md[c.k])||0;if(v>0)sum+=v;}});h+=c.t==='c'?'<td>'+cnt+'</td>':'<td>'+(sum>0?sum:0)+'</td>';});
+    h+='<td class="score-col">'+ts.toLocaleString()+'</td></tr>';
+    h+='</table></div>';
+  }
   h+='<div class="ft"><button class="bp" id="sync-btn" onclick="saveToDb()">'+saveBtnHTML()+'</button></div>';
   document.getElementById('app').innerHTML=h;
   requestAnimationFrame(function(){var a=document.querySelector('.tabs .on');if(a)a.scrollIntoView({inline:'center',behavior:'auto'});});
