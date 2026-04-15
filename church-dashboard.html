@@ -108,7 +108,7 @@ const COLS=[
 let sundays=[];
 (function(){const now=new Date();for(let i=-12;i<=4;i++){const d=new Date(now);const day=d.getDay();d.setDate(d.getDate()-day+(day===0?0:7)+i*7);d.setHours(0,0,0,0);const m=d.getMonth()+1,dt=d.getDate();sundays.push({k:`${d.getFullYear()}-${String(m).padStart(2,'0')}-${String(dt).padStart(2,'0')}`,l:`${m}/${dt}`,ts:d.getTime()});}})();
 
-let S={url:'',week:'',data:null,urls:null,loading:false,tab:'report',showSetup:false};
+let S={url:'',week:'',data:null,urls:null,loading:false,tab:'report',showSetup:false,gatewayUrl:''};
 S.week=(function(){let c=sundays[0],now=Date.now();for(const s of sundays)if(Math.abs(s.ts-now)<Math.abs(c.ts-now))c=s;return c.k;})();
 
 const HAS_CLOUD=typeof window.storage!=='undefined'&&window.storage&&typeof window.storage.get==='function';
@@ -223,7 +223,15 @@ function _render(){
         <div id="dash-error" style="display:none;color:#c0392b;font-size:12px;font-weight:600;margin-bottom:8px"></div>
         <input id="dash-code" type="text" maxlength="20" placeholder="접속코드 입력" autocomplete="off" style="width:100%;padding:14px;border:2px solid #ddd8ef;border-radius:12px;font-size:18px;font-weight:700;text-align:center;outline:none;margin-bottom:10px;letter-spacing:3px">
         <button id="dash-auth-btn" onclick="dashAuth()" style="width:100%;padding:14px;border:none;border-radius:12px;background:linear-gradient(135deg,#1a1a2e,#16213e);color:#fff;font-size:16px;font-weight:700;cursor:pointer">접속</button>
-        <p style="font-size:10px;color:#908caa;margin-top:12px">접속코드는 목사님 또는 관리자에게 문의하세요</p>`;
+        <p style="font-size:10px;color:#908caa;margin-top:12px">접속코드는 목사님 또는 관리자에게 문의하세요</p>
+        <details style="margin-top:16px;text-align:left">
+          <summary style="font-size:11px;color:#908caa;cursor:pointer">관리자 설정</summary>
+          <div style="margin-top:8px">
+            <p style="font-size:11px;color:#6b6558;margin-bottom:6px">게이트웨이 URL (41교구 Apps Script URL)</p>
+            <input id="dgw-input" type="text" placeholder="https://script.google.com/macros/s/..." value="${S.gatewayUrl||''}" style="width:100%;padding:10px;border:2px solid #ddd8ef;border-radius:8px;font-size:11px;outline:none;margin-bottom:6px;box-sizing:border-box">
+            <button onclick="saveDashGateway()" style="width:100%;padding:9px;border:none;border-radius:8px;background:#1a237e;color:#fff;font-size:12px;font-weight:700;cursor:pointer">게이트웨이 저장</button>
+          </div>
+        </details>`;
     }
     sh+=`</div>`;
     document.getElementById('app').innerHTML=sh;
@@ -329,6 +337,24 @@ function _render(){
   requestAnimationFrame(()=>{const a=document.querySelector('.tabs .on');if(a)a.scrollIntoView({inline:'center',behavior:'auto'});});
 }
 
+async function saveDashGateway(){
+  const el=document.getElementById('dgw-input');
+  const u=el?el.value.trim():'';
+  if(!u){toast('URL을 입력해주세요');return;}
+  S.gatewayUrl=u;
+  await sset('ch:gateway',u);
+  toast('게이트웨이 저장 완료!');
+  render();
+}
+
+async function getDashGateway(){
+  if(GATEWAY_URL&&GATEWAY_URL.length>10)return GATEWAY_URL;
+  if(S.gatewayUrl&&S.gatewayUrl.length>10)return S.gatewayUrl;
+  const saved=await sget('ch:gateway');
+  if(saved&&saved.length>10){S.gatewayUrl=saved;return saved;}
+  return null;
+}
+
 async function dashAuth(){
   const el=document.getElementById('dash-code');
   const errEl=document.getElementById('dash-error');
@@ -337,8 +363,8 @@ async function dashAuth(){
   const code=el.value.trim();
   if(!code){if(errEl){errEl.textContent='접속코드를 입력해주세요';errEl.style.display='block';}return;}
 
-  let gw=GATEWAY_URL;
-  if(!gw||gw.length<10){gw=await sget('ch:gateway');if(!gw||gw.length<10){if(errEl){errEl.textContent='게이트웨이 URL 미설정 — 관리자 문의';errEl.style.display='block';}return;}}
+  const gw=await getDashGateway();
+  if(!gw){if(errEl){errEl.textContent='게이트웨이 URL을 먼저 설정해주세요 (아래 관리자 설정)';errEl.style.display='block';}return;}
 
   if(btn){btn.disabled=true;btn.textContent='인증 중...';}
   if(errEl)errEl.style.display='none';
@@ -348,14 +374,16 @@ async function dashAuth(){
     const text=await res.text();
     if(text.startsWith('<'))throw new Error('연결 실패');
     const json=JSON.parse(text);
-    if(json.status==='ok'&&json.script_url&&json.script_url.length>10){
-      S.url=json.script_url;
-      await sset(DK,json.script_url);
+    if(json.status==='ok'){
+      // admin41 코드 → 게이트웨이 자체가 대시보드 URL
+      S.url=gw;
+      await sset(DK,gw);
       await sset('ch:gateway',gw);
-      toast('접속 성공! '+json.parish_name);
+      S.gatewayUrl=gw;
+      toast('접속 성공! '+(json.parish_name||''));
       S.showSetup=false;render();return;
     }else{if(errEl){errEl.textContent=json.message||'인증 실패';errEl.style.display='block';}}
-  }catch(e){if(errEl){errEl.textContent='서버 연결 실패';errEl.style.display='block';}}
+  }catch(e){if(errEl){errEl.textContent='서버 연결 실패 — URL을 확인해주세요';errEl.style.display='block';}}
   if(btn){btn.disabled=false;btn.textContent='접속';}
 }
 
@@ -364,6 +392,12 @@ async function clearDashUrl(){S.url='';await sset(DK,'');toast('연결 해제됨
 // INIT: 자동 로그인
 (async function(){
   document.getElementById('app').innerHTML='<div style="min-height:100vh;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:8px"><div style="font-size:38px">📊</div><div style="font-size:16px;font-weight:700;color:#1a1a2e">41교구 구역보고서</div><div style="font-size:12px;color:#908caa">불러오는 중...</div></div>';
+
+  // 게이트웨이 URL 로드
+  const savedGw=await sget('ch:gateway');
+  if(savedGw&&savedGw.length>10)S.gatewayUrl=savedGw;
+  else if(GATEWAY_URL&&GATEWAY_URL.length>10){S.gatewayUrl=GATEWAY_URL;await sset('ch:gateway',GATEWAY_URL);}
+
   const url=await sget(DK);
   if(url&&url.length>10){S.url=url;S.showSetup=false;}
   render();
