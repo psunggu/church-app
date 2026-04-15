@@ -459,7 +459,7 @@ function _render(){
     const errMsg=state._sheetError?` (원인: ${state._sheetError})`:'';
     h+=`<div class="src-bar local" style="background:#fff3e0;color:#e65100">시트 연결 실패${errMsg}<br><button onclick="syncSheet()">시트 저장</button> <button onclick="clearLocalCache()">캐시 삭제</button> <button onclick="loadWeek()">재시도</button></div>`;
   }
-  else if(state.dataSource==='empty')h+=`<div class="src-bar empty">새로운 주간입니다 <button onclick="forceLoadFromSheet()">시트에서 불러오기</button></div>`;
+  else if(state.dataSource==='empty')h+=`<div class="src-bar empty" style="background:#e8f5e9;color:#2e7d32">새로운 주간입니다 — 출석을 체크해주세요</div>`;
 
   // 현황 버튼 (보고서 뷰가 아닐 때)
   if(state.view!=='report'){
@@ -624,7 +624,7 @@ function renderSetup(){
   }
 }
 
-function syncBtnHTML(){return '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" style="margin-right:6px"><path d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>구글 시트 저장';}
+function syncBtnHTML(){return '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" style="margin-right:6px"><path d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>저장';}
 
 async function syncSheet(){
   if(!state.url)return toast('URL이 없습니다');
