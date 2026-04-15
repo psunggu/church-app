@@ -129,7 +129,7 @@ const P_ID='4133',P_LABEL='4133구역';
 
 // ═══ 게이트웨이 URL (41교구 통합 시트의 Apps Script URL) ═══
 // 이 URL만 HTML에 노출 — 접속코드 없이는 데이터 접근 불가
-const GATEWAY_URL='https://script.google.com/macros/s/AKfycbwYD9w8MhK3ESbRmB0anY_dpL9i-3Sc8_UDn3Q35z2LdVIi8Krfs5z1FnGwWU9LdgpWrw/exec'; // ← 41교구 Apps Script 배포 URL을 넣어주세요
+const GATEWAY_URL=''; // ← 41교구 Apps Script 배포 URL을 넣어주세요
 
 const FALLBACK_MEMBERS=[
   {n:'성미선',r:'구역장'},{n:'박성규',r:'권찰'},{n:'고요한',r:'구역원'},{n:'김성이B',r:'구역원'},
@@ -248,8 +248,8 @@ async function loadWeek(){
     for(let attempt=0;attempt<2;attempt++){
       result=await fetchFromSheet(state.week);
       if(result.connected)break;
-      // 1회 실패 시 0.5초 대기 후 재시도
-      if(attempt===0)await new Promise(r=>setTimeout(r,500));
+      // 1회 실패 시 0.3초 대기 후 재시도
+      if(attempt===0)await new Promise(r=>setTimeout(r,300));
     }
 
     if(result&&result.connected){
@@ -299,9 +299,9 @@ async function fetchFromSheet(weekKey){
   try{
     const url=state.url+'?action=read&date='+encodeURIComponent(weekKey)+'&parish='+P_ID;
 
-    // 10초 타임아웃
+    // 6초 타임아웃
     const controller=new AbortController();
-    const timeout=setTimeout(()=>controller.abort(),10000);
+    const timeout=setTimeout(()=>controller.abort(),6000);
 
     const res=await fetch(url,{
       redirect:'follow',
@@ -348,7 +348,7 @@ async function fetchFromSheet(weekKey){
     return {connected:true,data:null,error:null};
 
   }catch(e){
-    return {connected:false,data:null,error:e.name==='AbortError'?'타임아웃(10초)':e.message};
+    return {connected:false,data:null,error:e.name==='AbortError'?'타임아웃(6초)':e.message};
   }
 }
 
@@ -410,9 +410,20 @@ function numSet(name,k,v){if(!state.data[name])state.data[name]=empty();state.da
 function toggle(name){state.expanded=state.expanded===name?null:name;render();}
 async function setWeek(k){
   state.week=k;state.expanded=null;state.lastModified=null;state.unsaved=false;state.touched=new Set();state._sheetError=null;
-  // 로컬 캐시 삭제 → 시트 DATA 탭에서 새로 불러오기
-  await sset(SK(k),'');
-  loadWeek();
+
+  // 캐시 즉시 표시 → 백그라운드에서 시트 동기화
+  const cached=await sget(SK(k));
+  if(cached&&cached.length>10){
+    state.data=JSON.parse(cached);
+    state.dataSource='local';
+  }else{
+    state.data=emptyAll();
+    state.dataSource='empty';
+  }
+  render();
+
+  // 백그라운드 시트 동기화
+  bgSync();
 }
 function setView(v){state.view=v;render();}
 function showAddForm(){state.addingMember=true;render();requestAnimationFrame(()=>{const el=document.getElementById('add-name');if(el)el.focus();});}
@@ -454,10 +465,10 @@ function _render(){
   </div>`;
 
   // 데이터 출처 표시
-  if(state.dataSource==='sheet')h+=`<div class="src-bar sheet">구글 시트에서 불러옴</div>`;
+  if(state.dataSource==='sheet')h+=`<div class="src-bar sheet">시트에서 불러옴 ✓</div>`;
   else if(state.dataSource==='local'){
-    const errMsg=state._sheetError?` (원인: ${state._sheetError})`:'';
-    h+=`<div class="src-bar local" style="background:#fff3e0;color:#e65100">시트 연결 실패${errMsg}<br><button onclick="syncSheet()">시트 저장</button> <button onclick="clearLocalCache()">캐시 삭제</button> <button onclick="loadWeek()">재시도</button></div>`;
+    const errMsg=state._sheetError?` (${state._sheetError})`:'';
+    h+=`<div class="src-bar local" style="background:#fff3e0;color:#e65100">동기화 중...${errMsg} <button onclick="loadWeek()">새로고침</button></div>`;
   }
   else if(state.dataSource==='empty')h+=`<div class="src-bar empty" style="background:#e8f5e9;color:#2e7d32">새로운 주간입니다 — 출석을 체크해주세요</div>`;
 
@@ -651,13 +662,12 @@ async function syncSheet(){
   let success=false;
   let lastError='';
 
-  // 최대 2회 시도
+  // 최대 2회 시도 (6초 타임아웃)
   for(let attempt=0;attempt<2;attempt++){
     try{
       const controller=new AbortController();
-      const tid=setTimeout(()=>controller.abort(),10000);
+      const tid=setTimeout(()=>controller.abort(),6000);
 
-      // Google Apps Script POST (redirect:'follow'로 302 처리)
       const res=await fetch(state.url,{
         method:'POST',
         redirect:'follow',
@@ -667,7 +677,6 @@ async function syncSheet(){
       });
       clearTimeout(tid);
 
-      // 응답 처리 (다양한 케이스 대응)
       if(res.ok||res.status===200||res.type==='opaque'||res.redirected){
         try{
           const text=await res.text();
@@ -677,30 +686,24 @@ async function syncSheet(){
               success=true;break;
             }
           }
-          // POST는 성공했지만 GET 리다이렉트 결과가 이상한 경우
-          // → ping으로 연결 확인하여 성공 여부 판별
-          const verify=await fetch(state.url+'?action=ping',{redirect:'follow'});
-          const vText=await verify.text();
-          if(!vText.startsWith('<')){success=true;break;}
         }catch(parseErr){
-          // 파싱 실패지만 fetch 자체는 성공 → 저장 성공으로 간주
           success=true;break;
         }
       }else{
         lastError='HTTP '+res.status;
       }
     }catch(e){
-      lastError=e.name==='AbortError'?'타임아웃(10초)':e.message;
-      if(attempt===0)await new Promise(r=>setTimeout(r,500));
+      lastError=e.name==='AbortError'?'타임아웃':e.message;
+      if(attempt===0)await new Promise(r=>setTimeout(r,300));
     }
   }
 
   if(success){
-    // 41교구 통합 시트에도 저장 (실패 무시)
+    // 41교구 통합 시트에도 저장 (병렬, 실패 무시)
     const dashUrl=await sget('dash41:url');
     if(dashUrl&&dashUrl.length>10){
-      try{await fetch(dashUrl,{method:'POST',redirect:'follow',
-        headers:{'Content-Type':'text/plain;charset=utf-8'},body:payload});}catch(e){}
+      fetch(dashUrl,{method:'POST',redirect:'follow',
+        headers:{'Content-Type':'text/plain;charset=utf-8'},body:payload}).catch(()=>{});
     }
 
     toast(`${rows.length}명 저장 완료! ✓`);
@@ -850,7 +853,7 @@ async function saveDirectUrl(){
   toast('URL 직접 저장 완료!');
   render();
 }
-// ═══ INIT (자동 로그인) ═══
+// ═══ INIT (캐시 먼저 → 백그라운드 동기화) ═══
 (async function(){
   document.getElementById('app').innerHTML='<div style="min-height:100vh;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:8px"><div style="font-size:38px">⛪</div><div style="font-size:16px;font-weight:700;color:#1e2a1f">'+P_LABEL+' 체크리스트</div><div style="font-size:12px;color:#908caa">불러오는 중...</div></div>';
 
@@ -859,23 +862,92 @@ async function saveDirectUrl(){
   if(savedGw&&savedGw.length>10)state.gatewayUrl=savedGw;
   else if(GATEWAY_URL&&GATEWAY_URL.length>10){state.gatewayUrl=GATEWAY_URL;await sset('ch:gateway',GATEWAY_URL);}
 
-  // 로컬에 URL이 있으면 자동 로그인
   const url=await sget(UK);
   if(url&&url.length>10){
     state.url=url;
     state.ready=true;
 
-    // 로컬 캐시 초기화 (시트 DATA 탭이 진실의 원천)
-    const wk=state.week;
-    await sset(SK(wk),'');
-    state.savedWeeks={};
-    await sset(WK,'{}');
+    // 1단계: 캐시된 구역원 즉시 로드 (네트워크 없이)
+    const cachedMembers=await sget(MK);
+    if(cachedMembers){state.members=JSON.parse(cachedMembers);}
+    else{state.members=[...FALLBACK_MEMBERS];}
 
-    await loadMembers();
-    await loadWeek();
+    // 2단계: 캐시된 주간 데이터로 즉시 화면 표시
+    const cachedData=await sget(SK(state.week));
+    if(cachedData&&cachedData.length>10){
+      state.data=JSON.parse(cachedData);
+      state.dataSource='local';
+    }else{
+      state.data=emptyAll();
+      state.dataSource='empty';
+    }
+    render();
+
+    // 3단계: 백그라운드에서 시트 동기화 (UI 차단 없음)
+    bgSync();
   }else{
     state.ready=false;
     render();
   }
 })();
+
+// 백그라운드 동기화 (UI 차단 없이 시트 데이터 확인)
+async function bgSync(){
+  try{
+    // 구역원 + 주간 데이터 동시 조회
+    const [membersResult, sheetResult]=await Promise.allSettled([
+      fetchMembersFromSheet(),
+      fetchFromSheet(state.week)
+    ]);
+
+    let updated=false;
+
+    // 구역원 업데이트
+    if(membersResult.status==='fulfilled'&&membersResult.value){
+      state.members=membersResult.value;
+      await sset(MK,JSON.stringify(state.members));
+      updated=true;
+    }
+
+    // 주간 데이터 업데이트
+    if(sheetResult.status==='fulfilled'){
+      const result=sheetResult.value;
+      if(result.connected){
+        if(result.data){
+          state.data=result.data;
+          state.dataSource='sheet';
+          await sset(SK(state.week),JSON.stringify(state.data));
+          await markWeekSaved(state.week);
+          updated=true;
+        }else if(state.dataSource!=='empty'||hasAnyData(state.data)){
+          // 시트에 없는데 로컬에 있으면 → 빈 상태로
+          state.data=emptyAll();
+          state.dataSource='empty';
+          await sset(SK(state.week),'');
+          updated=true;
+        }
+      }
+    }
+
+    if(updated)render();
+  }catch(e){console.log('bgSync error:',e);}
+}
+
+// 구역원 목록 시트에서 가져오기 (별도 함수)
+async function fetchMembersFromSheet(){
+  if(!state.url)return null;
+  try{
+    const controller=new AbortController();
+    const tid=setTimeout(()=>controller.abort(),6000);
+    const res=await fetch(state.url+'?action=members&parish='+P_ID,{redirect:'follow',signal:controller.signal});
+    clearTimeout(tid);
+    const text=await res.text();
+    if(text.startsWith('<'))return null;
+    const json=JSON.parse(text);
+    if(json.members&&json.members.length>0){
+      return json.members.map(m=>({n:m.name,r:m.role}));
+    }
+  }catch(e){}
+  return null;
+}
 </script>
