@@ -627,7 +627,6 @@ async function syncSheet(){
   if(btn){btn.disabled=true;btn.textContent='저장 중...';}
   const d=state.data;
 
-  // 수정된 구역원(touched) + 데이터 있는 구역원 모두 포함
   const targets=state.members.filter(m=>state.touched.has(m.n)||hasFilled(d[m.n]));
   const rows=targets.map(m=>{
     const md=d[m.n]||empty();
@@ -636,34 +635,62 @@ async function syncSheet(){
     return r;
   });
   if(rows.length===0){toast('입력된 데이터가 없습니다');if(btn){btn.disabled=false;btn.innerHTML=syncBtnHTML();}return;}
-  try{
-    // 1. 구역 시트에 저장
-    await fetch(state.url,{
-      method:'POST',redirect:'follow',
-      headers:{'Content-Type':'text/plain;charset=utf-8'},
-      body:JSON.stringify({action:'sync',rows})
-    });
 
-    // 2. 41교구 통합 시트에도 저장
+  // 저장 시도 (타임아웃 10초, 최대 2회)
+  let success=false;
+  let lastError='';
+  for(let attempt=0;attempt<2;attempt++){
+    try{
+      const controller=new AbortController();
+      const timeout=setTimeout(()=>controller.abort(),10000);
+
+      const res=await fetch(state.url,{
+        method:'POST',redirect:'follow',signal:controller.signal,
+        headers:{'Content-Type':'text/plain;charset=utf-8'},
+        body:JSON.stringify({action:'sync',rows})
+      });
+      clearTimeout(timeout);
+
+      const text=await res.text();
+      if(text.startsWith('<')){lastError='HTML응답(Apps Script 재배포 필요)';continue;}
+      const json=JSON.parse(text);
+      if(json.status==='ok'||json.inserted!==undefined||json.edited!==undefined){
+        success=true;break;
+      }else{
+        lastError='응답: '+text.substring(0,100);
+      }
+    }catch(e){
+      lastError=e.name==='AbortError'?'타임아웃(10초)':e.message;
+      if(attempt===0)await new Promise(r=>setTimeout(r,500));
+    }
+  }
+
+  if(success){
+    // 41교구 통합 시트에도 저장 (실패해도 무시)
     const dashUrl=await sget('dash41:url');
     if(dashUrl&&dashUrl.length>10){
       try{
-        await fetch(dashUrl,{
-          method:'POST',redirect:'follow',
+        const c2=new AbortController();
+        const t2=setTimeout(()=>c2.abort(),10000);
+        await fetch(dashUrl,{method:'POST',redirect:'follow',signal:c2.signal,
           headers:{'Content-Type':'text/plain;charset=utf-8'},
-          body:JSON.stringify({action:'sync',rows})
-        });
+          body:JSON.stringify({action:'sync',rows})});
+        clearTimeout(t2);
       }catch(e){}
     }
 
     toast(`${rows.length}명 저장 완료! ✓`);
     state.unsaved=false;
     state.touched=new Set();
+    state.dataSource='sheet';
+    state._sheetError=null;
     const uel=document.getElementById('unsaved-badge');
     if(uel)uel.style.display='none';
     await sset(SK(state.week),JSON.stringify(state.data));
     await markWeekSaved(state.week);
-  }catch{toast('실패 — 다시 시도해주세요');}
+  }else{
+    toast('저장 실패: '+lastError);
+  }
   if(btn){btn.disabled=false;btn.innerHTML=syncBtnHTML();}
 }
 
@@ -803,8 +830,6 @@ async function saveDirectUrl(){
 (async function(){
   document.getElementById('app').innerHTML='<div style="min-height:100vh;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:8px"><div style="font-size:38px">⛪</div><div style="font-size:16px;font-weight:700;color:#1e2a1f">'+P_LABEL+' 체크리스트</div><div style="font-size:12px;color:#908caa">불러오는 중...</div></div>';
 
-  await loadSavedWeeks();
-
   // 게이트웨이 URL 로드
   const savedGw=await sget('ch:gateway');
   if(savedGw&&savedGw.length>10)state.gatewayUrl=savedGw;
@@ -815,6 +840,13 @@ async function saveDirectUrl(){
   if(url&&url.length>10){
     state.url=url;
     state.ready=true;
+
+    // 로컬 캐시 초기화 (시트 DATA 탭이 진실의 원천)
+    const wk=state.week;
+    await sset(SK(wk),'');
+    state.savedWeeks={};
+    await sset(WK,'{}');
+
     await loadMembers();
     await loadWeek();
   }else{
