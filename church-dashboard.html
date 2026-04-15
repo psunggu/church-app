@@ -1,410 +1,137 @@
-
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="41교구">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#1a1a2e">
-<title>2026 1학기 41교구 구역보고서</title>
+<title>구역보고서</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
 html{font-family:'Apple SD Gothic Neo','Noto Sans KR',-apple-system,BlinkMacSystemFont,sans-serif;background:#f0eff8;color:#1a1a2e;font-size:14px;-webkit-text-size-adjust:100%}
-body{margin:0;padding-bottom:20px;min-height:100vh;min-height:100dvh}
-
+body{margin:0;padding-bottom:20px;min-height:100vh}
+.login{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:16px}
+.login-c{background:#fff;border-radius:20px;padding:36px 24px 32px;max-width:360px;width:100%;box-shadow:0 4px 24px rgba(0,0,0,.06)}
+.login-c h1{font-size:20px;font-weight:800;text-align:center;margin:8px 0 24px}
+.login-c label{display:block;font-size:12px;font-weight:700;color:#6b6558;margin-bottom:4px}
+.login-c input{width:100%;padding:13px 14px;border:2px solid #ddd8ef;border-radius:10px;font-size:15px;font-weight:600;outline:none;margin-bottom:14px;box-sizing:border-box;transition:border .15s}
+.login-c input:focus{border-color:#1a1a2e}
+.login-c .btn{width:100%;padding:14px;border:none;border-radius:12px;background:linear-gradient(135deg,#1a1a2e,#16213e);color:#fff;font-size:16px;font-weight:700;cursor:pointer;margin-top:4px}.login-c .btn:disabled{opacity:.5}
+.login-c .err{color:#c0392b;font-size:12px;font-weight:600;text-align:center;margin-bottom:10px;display:none}
 .hd{background:linear-gradient(135deg,#1a1a2e,#16213e);padding:16px 14px 12px;position:sticky;top:0;z-index:20;display:flex;justify-content:space-between;align-items:flex-start}
-.hd h1{font-size:15px;font-weight:800;color:#e0def4}
-.hd p{font-size:10px;color:#908caa;margin-top:2px}
+.hd h1{font-size:15px;font-weight:800;color:#e0def4}.hd p{font-size:10px;color:#908caa;margin-top:2px}
 .hd button{background:none;border:none;cursor:pointer;padding:4px}
-
-.tabs{background:#fff;border-bottom:1px solid #ddd8ef;position:sticky;top:48px;z-index:19;display:flex;overflow-x:auto;padding:4px 6px;gap:2px;-webkit-overflow-scrolling:touch;scrollbar-width:none}
-.tabs::-webkit-scrollbar{display:none}
-.tabs button{padding:5px 10px;border:none;border-radius:12px;background:transparent;color:#908caa;font-size:11px;font-weight:600;cursor:pointer;white-space:nowrap;flex-shrink:0}
-.tabs button.on{background:#1a1a2e;color:#fff}
-
-.ctrl{padding:8px 12px;display:flex;gap:6px;align-items:center;flex-wrap:wrap}
-.ctrl button{padding:8px 12px;border:none;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:4px}
-.ctrl .c1{background:linear-gradient(135deg,#1a237e,#283593);color:#fff}
-.ctrl .c2{background:linear-gradient(135deg,#1b5e20,#2e7d32);color:#fff}
-.ctrl button:disabled{opacity:.5}
-.ctrl .info{font-size:10px;color:#908caa}
-
+.tabs{background:#fff;border-bottom:1px solid #ddd8ef;position:sticky;top:48px;z-index:19;display:flex;overflow-x:auto;padding:4px 6px;gap:2px;scrollbar-width:none}.tabs::-webkit-scrollbar{display:none}
+.tabs button{padding:5px 10px;border:none;border-radius:12px;background:transparent;color:#908caa;font-size:11px;font-weight:600;cursor:pointer;white-space:nowrap;flex-shrink:0}.tabs button.on{background:#1a1a2e;color:#fff}
+.ctrl{padding:8px 12px;display:flex;gap:6px;align-items:center}
+.ctrl button{padding:8px 14px;border:none;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer}.ctrl .c1{background:linear-gradient(135deg,#1a237e,#283593);color:#fff}.ctrl button:disabled{opacity:.5}.ctrl .info{font-size:10px;color:#908caa}
 .cards{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;padding:0 12px 8px}
-.cd{background:#fff;border-radius:8px;padding:8px;text-align:center;border:1px solid #ece9f5}
-.cd .v{font-size:18px;font-weight:800;color:#1a1a2e;line-height:1}
-.cd .l{font-size:9px;color:#908caa;font-weight:600;margin-top:2px}
-
+.cd{background:#fff;border-radius:8px;padding:8px;text-align:center;border:1px solid #ece9f5}.cd .v{font-size:18px;font-weight:800;line-height:1}.cd .l{font-size:9px;color:#908caa;font-weight:600;margin-top:2px}
 .tw{overflow-x:auto;-webkit-overflow-scrolling:touch;padding:0 4px 8px}
 table.rt{border-collapse:collapse;font-size:10px;width:max-content;min-width:100%}
-table.rt th{background:#2c3e6b;color:#e8eaf6;font-weight:700;padding:4px 4px;white-space:nowrap;border:1px solid #1a2750;text-align:center;line-height:1.2}
-table.rt th.y{background:#f9a825;color:#1a1a2e}
-table.rt th.sub{background:#3d5274;font-weight:400;font-size:8px;color:#b0bec5}
+table.rt th{background:#2c3e6b;color:#e8eaf6;font-weight:700;padding:4px;white-space:nowrap;border:1px solid #1a2750;text-align:center;line-height:1.2}
+table.rt th.y{background:#f9a825;color:#1a1a2e}.rt th.sub{background:#3d5274;font-weight:400;font-size:8px;color:#b0bec5}
 table.rt td{padding:3px 4px;text-align:center;border:1px solid #ddd8ef;white-space:nowrap;font-size:10px}
 table.rt td.nm{position:sticky;left:0;background:inherit;text-align:left;font-weight:700;font-size:11px;z-index:1;min-width:50px}
-table.rt tr:nth-child(odd){background:#fff}
-table.rt tr:nth-child(even){background:#f5f4fa}
-table.rt .v{color:#1565c0;font-weight:700}
-table.rt .z{color:#d0d0d0}
-table.rt .sc{background:rgba(26,26,46,.05);font-weight:800;color:#1a1a2e;font-size:11px}
-table.rt .tr{background:#e8eaf6 !important}
-table.rt .tr td{border-top:2px solid #1a1a2e;font-weight:800}
-table.rt .att{text-align:left;font-size:8px;color:#555;max-width:160px;white-space:normal;line-height:1.2}
-
-/* URL 관리 */
-.url-sec{padding:8px 12px}
-.url-title{font-size:13px;font-weight:700;margin-bottom:6px;display:flex;justify-content:space-between;align-items:center}
-.url-tbl{width:100%;border-collapse:collapse;font-size:11px}
-.url-tbl th{text-align:left;padding:5px;background:#e8eaf6;font-weight:700;border-bottom:1px solid #c5cae9}
-.url-tbl td{padding:5px;border-bottom:1px solid #ece9f5;vertical-align:middle}
-.url-tbl .st-ok{color:#2e7d32;font-weight:700;font-size:10px}
-.url-tbl .st-no{color:#e65100;font-weight:700;font-size:10px}
-.url-tbl input{width:100%;padding:5px;border:1px solid #ddd8ef;border-radius:5px;font-size:10px;outline:none}
-.url-tbl button{padding:4px 10px;border:none;border-radius:5px;background:#1a237e;color:#fff;font-size:10px;font-weight:700;cursor:pointer}
-
-.bs{padding:8px 12px}
-.bs-t{font-size:12px;font-weight:700;margin-bottom:6px}
-.br{display:flex;align-items:center;gap:5px;margin-bottom:3px}
-.br-l{min-width:42px;font-size:10px;font-weight:700}
-.br-bg{flex:1;height:16px;background:#e8eaf6;border-radius:4px;overflow:hidden}
-.br-f{height:100%;border-radius:4px;transition:width .4s}
-.br-v{min-width:44px;text-align:right;font-size:10px;font-weight:800}
-
+table.rt tr:nth-child(odd){background:#fff}table.rt tr:nth-child(even){background:#f5f4fa}
+.rt .v{color:#1565c0;font-weight:700}.rt .z{color:#d0d0d0}
+.rt .sc{background:rgba(26,26,46,.05);font-weight:800;font-size:11px}.rt .tr{background:#e8eaf6!important}.rt .tr td{border-top:2px solid #1a1a2e;font-weight:800}
+.rt .att{text-align:left;font-size:8px;color:#555;max-width:160px;white-space:normal;line-height:1.2}
+.bs{padding:8px 12px}.bs-t{font-size:12px;font-weight:700;margin-bottom:6px}
+.br{display:flex;align-items:center;gap:5px;margin-bottom:3px}.br-l{min-width:42px;font-size:10px;font-weight:700}.br-bg{flex:1;height:16px;background:#e8eaf6;border-radius:4px;overflow:hidden}.br-f{height:100%;border-radius:4px;transition:width .4s}.br-v{min-width:44px;text-align:right;font-size:10px;font-weight:800}
 .msg{text-align:center;padding:24px 16px;color:#908caa;font-size:12px}
-.su{padding:16px;text-align:center}
-.su input{width:100%;max-width:400px;padding:10px;border:2px solid #ddd8ef;border-radius:10px;font-size:13px;outline:none;margin-bottom:8px}
-.su button{padding:10px 20px;border:none;border-radius:10px;background:#1a237e;color:#fff;font-size:14px;font-weight:700;cursor:pointer}
-
-.toast{position:fixed;bottom:16px;left:50%;transform:translateX(-50%);padding:8px 18px;border-radius:16px;background:rgba(26,26,46,.92);color:#fff;font-size:12px;font-weight:600;z-index:40;white-space:nowrap;opacity:0;transition:opacity .2s}
-.toast.show{opacity:1}
+.toast{position:fixed;bottom:16px;left:50%;transform:translateX(-50%);padding:8px 18px;border-radius:16px;background:rgba(26,26,46,.92);color:#fff;font-size:12px;font-weight:600;z-index:40;white-space:nowrap;opacity:0;transition:opacity .2s}.toast.show{opacity:1}
 </style>
-
 <div id="app"></div>
 <div id="toast" class="toast"></div>
-
 <script>
+const SUPABASE_URL='https://ybpeyxzqzccfvcaveluh.supabase.co'; // ← 동일
+const SUPABASE_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlicGV5eHpxemNjZnZjYXZlbHVoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYyMzA0MTksImV4cCI6MjA5MTgwNjQxOX0.RpsniUKYkfDCJmgKSL6jme3viKoIWxbvojReuEZuDgk'; // ← 동일
+const sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
+
 const PARISHES=['4111','4112','4113','4121','4122','4131','4132','4133','4134','4141','4151'];
-const DK='dash41:url';
-
-// ═══ 게이트웨이 URL (41교구 통합 시트의 Apps Script URL) ═══
-const GATEWAY_URL=''; // ← 41교구 Apps Script 배포 URL을 넣어주세요
-
 const COLS=[
-  {k:'attendance',l:'출석',p:20,t:'c',s:['인원','합산']},
-  {k:'bible_read',l:'성경읽기',p:1,t:'n',s:['장','합산']},
-  {k:'winter_bible',l:'겨울방학읽기',p:1,t:'n',s:['장','합산']},
-  {k:'bible_marathon',l:'통독수련회',p:1189,t:'c',s:['인원','합산']},
-  {k:'bible_write',l:'성경쓰기',p:5,t:'n',s:['쪽','합산']},
-  {k:'bible_typing',l:'성경타이핑',p:2,t:'n',s:['쪽','합산']},
-  {k:'memorize',l:'암송',p:3,t:'c',s:['인원','합산']},
-  {k:'evangelism',l:'전도',p:50,t:'c',s:['인원','합산']},
-  {k:'district_service',l:'구역봉사',p:100,t:'c',s:['인원','합산']},
-  {k:'sunday_service',l:'봉사팀봉사',p:30,t:'c',s:['개수','합산']},
-  {k:'nurture',l:'양육',p:10,t:'c',s:['인원','합산']},
-  {k:'martyr_guide',l:'양화진안내',p:20,t:'c',s:['인원','합산']},
-  {k:'environment',l:'환경보호',p:100,t:'c',s:['여부','합산']},
-  {k:'meeting_place',l:'구역모임장소',p:100,t:'c',s:['여부','합산']},
+  {k:'attendance',l:'출석',p:20,t:'c',s:['인원','합산']},{k:'bible_read',l:'성경읽기',p:1,t:'n',s:['장','합산']},
+  {k:'winter_bible',l:'겨울방학읽기',p:1,t:'n',s:['장','합산']},{k:'bible_marathon',l:'통독수련회',p:1189,t:'c',s:['인원','합산']},
+  {k:'bible_write',l:'성경쓰기',p:5,t:'n',s:['쪽','합산']},{k:'bible_typing',l:'성경타이핑',p:2,t:'n',s:['쪽','합산']},
+  {k:'memorize',l:'암송',p:3,t:'c',s:['인원','합산']},{k:'evangelism',l:'전도',p:50,t:'c',s:['인원','합산']},
+  {k:'district_service',l:'구역봉사',p:100,t:'c',s:['인원','합산']},{k:'sunday_service',l:'봉사팀봉사',p:30,t:'c',s:['개수','합산']},
+  {k:'nurture',l:'양육',p:10,t:'c',s:['인원','합산']},{k:'martyr_guide',l:'양화진안내',p:20,t:'c',s:['인원','합산']},
+  {k:'environment',l:'환경보호',p:100,t:'c',s:['여부','합산']},{k:'meeting_place',l:'구역모임장소',p:100,t:'c',s:['여부','합산']},
 ];
-
 let sundays=[];
 (function(){const now=new Date();for(let i=-12;i<=4;i++){const d=new Date(now);const day=d.getDay();d.setDate(d.getDate()-day+(day===0?0:7)+i*7);d.setHours(0,0,0,0);const m=d.getMonth()+1,dt=d.getDate();sundays.push({k:`${d.getFullYear()}-${String(m).padStart(2,'0')}-${String(dt).padStart(2,'0')}`,l:`${m}/${dt}`,ts:d.getTime()});}})();
 
-let S={url:'',week:'',data:null,urls:null,loading:false,tab:'report',showSetup:false,gatewayUrl:''};
-S.week=(function(){let c=sundays[0],now=Date.now();for(const s of sundays)if(Math.abs(s.ts-now)<Math.abs(c.ts-now))c=s;return c.k;})();
-
-const HAS_CLOUD=typeof window.storage!=='undefined'&&window.storage&&typeof window.storage.get==='function';
-async function sget(k){
-  if(HAS_CLOUD){try{const r=await window.storage.get(k);if(r&&r.value)return r.value;return null;}catch{}}
-  try{return localStorage.getItem(k);}catch{return null;}
-}
-async function sset(k,v){
-  if(HAS_CLOUD){try{await window.storage.set(k,v);}catch{}}
-  try{localStorage.setItem(k,v);}catch{}
-}
+let D={week:'',data:null,loading:false,ready:false};
+D.week=(()=>{let c=sundays[0],now=Date.now();for(const s of sundays)if(Math.abs(s.ts-now)<Math.abs(c.ts-now))c=s;return c.k;})();
 function toast(m){const t=document.getElementById('toast');t.textContent=m;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2500);}
 
-// ═══ API 호출 ═══
-async function api(params){
-  const res=await fetch(S.url+'?'+params,{redirect:'follow'});
-  const text=await res.text();
-  if(text.startsWith('<'))throw new Error('HTML response');
-  return JSON.parse(text);
-}
-async function apiPost(body){
-  const res=await fetch(S.url,{method:'POST',redirect:'follow',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(body)});
-  const text=await res.text();
-  if(text.startsWith('<'))throw new Error('HTML response');
-  return JSON.parse(text);
-}
+async function loadData(){D.loading=true;render();const{data}=await sb.from('reports').select('*').eq('report_date',D.week);D.data=data||[];D.loading=false;toast(D.data.length>0?D.data.length+'건':'데이터 없음');render();}
+function calc(){if(!D.data)return null;const r={};PARISHES.forEach(p=>{r[p]={n:0,leader:'',lAtt:0,lBible:0,items:{},total:0,att:[]};COLS.forEach(c=>{r[p].items[c.k]={cnt:0,sum:0,sc:0};});});D.data.forEach(row=>{const pid=String(row.parish_id);if(!r[pid])return;r[pid].n++;if(row.role==='구역장'){r[pid].leader=row.member_name;if(row.attendance==='O')r[pid].lAtt=1;r[pid].lBible=parseInt(row.bible_read)||0;}if(row.attendance==='O')r[pid].att.push(row.member_name);COLS.forEach(c=>{const v=row[c.k];if(c.t==='c'){if(v==='O'){r[pid].items[c.k].cnt++;r[pid].items[c.k].sc+=c.p;}}else{const n=parseInt(v)||0;if(n>0){r[pid].items[c.k].cnt++;r[pid].items[c.k].sum+=n;r[pid].items[c.k].sc+=n*c.p;}}});});PARISHES.forEach(p=>{COLS.forEach(c=>{r[p].total+=r[p].items[c.k].sc;});});return r;}
+function setW(k){D.week=k;D.data=null;render();}
+function render(){const sy=window.scrollY;_render();requestAnimationFrame(()=>window.scrollTo(0,sy));}
 
-// DATA 조회: 각 교구 URL에서 수집 → DATA탭 저장 → 결과 표시
-async function fetchData(){
-  if(!S.url)return;
-  S.loading=true;S.data=null;render();
-  try{
-    // 1단계: 각 교구 시트에서 데이터 수집 → DATA탭에 저장
-    toast('교구별 데이터 수집 중...');
-    const collect=await api('action=collect&date='+encodeURIComponent(S.week));
-    const cMsg=`${collect.parishes_collected||0}개 교구 ${collect.rows_total||0}건 수집`;
-
-    // 2단계: DATA탭에서 통합 데이터 읽기
-    const json=await api('action=read&date='+encodeURIComponent(S.week));
-    S.data=json.rows||[];
-    toast(S.data.length>0?cMsg+' → '+S.data.length+'건 표시':'데이터 없음');
-    if(collect.errors&&collect.errors.length>0)console.log('수집 오류:',collect.errors);
-  }catch(e){toast('조회 실패: '+e.message);S.data=[];}
-  S.loading=false;render();
+function renderLogin(){
+  document.getElementById('app').innerHTML=`<div class="login"><div class="login-c">
+    <div style="font-size:42px;text-align:center">⛪</div>
+    <h1>구역보고서</h1>
+    <div class="err" id="login-err"></div>
+    <label for="login-id">아이디</label>
+    <input id="login-id" type="text" placeholder="교구번호 또는 admin" autocomplete="username" autocapitalize="off" spellcheck="false">
+    <label for="login-pw">비밀번호</label>
+    <input id="login-pw" type="password" placeholder="비밀번호" autocomplete="current-password">
+    <button class="btn" id="login-btn" onclick="doLogin()">로그인</button>
+  </div></div>`;
+  document.getElementById('login-id')?.focus();
+  document.getElementById('login-pw')?.addEventListener('keydown',e=>{if(e.key==='Enter')doLogin();});
+  document.getElementById('login-id')?.addEventListener('keydown',e=>{if(e.key==='Enter')document.getElementById('login-pw')?.focus();});
 }
 
-// URL 목록 불러오기
-async function loadUrls(){
-  if(!S.url)return;
-  try{
-    const json=await api('action=urls');
-    S.urls=json.urls||[];
-  }catch{S.urls=[];}
-  render();
+async function doLogin(){
+  const idEl=document.getElementById('login-id'),pwEl=document.getElementById('login-pw');
+  const errEl=document.getElementById('login-err'),btn=document.getElementById('login-btn');
+  const uid=(idEl?idEl.value.trim():''),pw=(pwEl?pwEl.value:'');
+  if(!uid||!pw){if(errEl){errEl.textContent='아이디와 비밀번호를 입력하세요';errEl.style.display='block';}return;}
+  if(btn){btn.disabled=true;btn.textContent='로그인 중...';}
+  if(errEl)errEl.style.display='none';
+  const email=(uid==='admin')?'admin@c41.app':`u${uid}@c41.app`;
+  const{data,error}=await sb.auth.signInWithPassword({email,password:pw});
+  if(error){if(errEl){errEl.textContent='아이디 또는 비밀번호가 올바르지 않습니다';errEl.style.display='block';}if(btn){btn.disabled=false;btn.textContent='로그인';}return;}
+  await onAuth(data.user);
 }
 
-// 교구 URL 저장
-async function saveParishUrl(pid){
-  const el=document.getElementById('pu-'+pid);
-  if(!el)return;
-  const u=el.value.trim();
-  if(!u){toast('URL 입력 필요');return;}
-  try{
-    await apiPost({action:'setUrl',parish_id:pid,url:u});
-    toast(pid+' URL 저장 완료');
-    await loadUrls();
-  }catch{toast('저장 실패');}
+async function onAuth(user){
+  const meta=user.user_metadata||{};
+  // parish → 체크리스트로 이동
+  if(meta.role==='parish'){window.location.href='church-checklist.html';return;}
+  // admin → 대시보드
+  D.ready=true;render();
 }
 
-function calc(){
-  if(!S.data)return null;
-  const r={};
-  PARISHES.forEach(p=>{
-    r[p]={n:0,leader:'',lAtt:0,lBible:0,items:{},total:0,att:[]};
-    COLS.forEach(c=>{r[p].items[c.k]={cnt:0,sum:0,sc:0};});
-  });
-  S.data.forEach(row=>{
-    const pid=String(row.parish_id);if(!r[pid])return;
-    r[pid].n++;
-    if(row.role==='구역장'){r[pid].leader=row.member_name;if(row.attendance==='O'||row.attendance===true)r[pid].lAtt=1;r[pid].lBible=parseInt(row.bible_read)||0;}
-    if(row.attendance==='O'||row.attendance===true)r[pid].att.push(row.member_name);
-    COLS.forEach(c=>{
-      const v=row[c.k];
-      if(c.t==='c'){if(v==='O'||v===true){r[pid].items[c.k].cnt++;r[pid].items[c.k].sc+=c.p;}}
-      else{const n=parseInt(v)||0;if(n>0){r[pid].items[c.k].cnt++;r[pid].items[c.k].sum+=n;r[pid].items[c.k].sc+=n*c.p;}}
-    });
-  });
-  PARISHES.forEach(p=>{COLS.forEach(c=>{r[p].total+=r[p].items[c.k].sc;});});
-  return r;
-}
-
-function setW(k){S.week=k;S.data=null;render();}
-
-function render(){
-  const sy=window.scrollY;_render();requestAnimationFrame(()=>window.scrollTo(0,sy));
-}
+async function doLogout(){await sb.auth.signOut();D.ready=false;render();}
 
 function _render(){
-  const wk=sundays.find(s=>s.k===S.week);
-  const ag=calc();
-
-  // 설정 화면
-  if(!S.url||S.showSetup){
-    let sh=`<div class="su"><h2 style="margin-bottom:8px">2026 1학기 41교구 구역보고서 화면</h2>`;
-
-    if(S.url){
-      sh+=`<div class="cur"><b>✓ 연결됨</b></div>
-        <button style="width:100%;padding:12px;border:none;border-radius:10px;background:linear-gradient(135deg,#1a1a2e,#16213e);color:#fff;font-size:15px;font-weight:700;cursor:pointer;margin-bottom:10px" onclick="S.showSetup=false;render()">보고서 화면으로 →</button>
-        <button onclick="clearDashUrl()" style="width:100%;padding:10px;border:2px solid #ddd8ef;border-radius:10px;background:#fff;font-size:13px;font-weight:600;color:#c0392b;cursor:pointer">연결 해제 (재인증)</button>`;
-    }else{
-      const hasGw=!!(GATEWAY_URL&&GATEWAY_URL.length>10)||(S.gatewayUrl&&S.gatewayUrl.length>10);
-
-      sh+=`<p style="color:#908caa;font-size:13px;margin-bottom:16px">관리자 접속코드를 입력하세요</p>
-        <div id="dash-error" style="display:none;color:#c0392b;font-size:12px;font-weight:600;margin-bottom:8px"></div>
-        <input id="dash-code" type="text" maxlength="20" placeholder="접속코드 입력" autocomplete="off" style="width:100%;padding:14px;border:2px solid #ddd8ef;border-radius:12px;font-size:18px;font-weight:700;text-align:center;outline:none;margin-bottom:10px;letter-spacing:3px">
-        <button id="dash-auth-btn" onclick="dashAuth()" style="width:100%;padding:14px;border:none;border-radius:12px;background:linear-gradient(135deg,#1a1a2e,#16213e);color:#fff;font-size:16px;font-weight:700;cursor:pointer">접속</button>
-        <p style="font-size:10px;color:#908caa;margin-top:12px">접속코드는 목사님 또는 관리자에게 문의하세요</p>`;
-
-      if(!hasGw){
-        sh+=`<details style="margin-top:16px;text-align:left" open>
-          <summary style="font-size:11px;color:#c0392b;cursor:pointer;font-weight:700">▶ 게이트웨이 설정 필요</summary>
-          <div style="margin-top:8px">
-            <p style="font-size:11px;color:#6b6558;margin-bottom:6px">게이트웨이 URL (41교구 Apps Script URL)</p>
-            <input id="dgw-input" type="text" placeholder="https://script.google.com/macros/s/..." value="" style="width:100%;padding:10px;border:2px solid #ddd8ef;border-radius:8px;font-size:11px;outline:none;margin-bottom:6px;box-sizing:border-box">
-            <button onclick="saveDashGateway()" style="width:100%;padding:9px;border:none;border-radius:8px;background:#1a237e;color:#fff;font-size:12px;font-weight:700;cursor:pointer">게이트웨이 저장</button>
-          </div>
-        </details>`;
-      }
-    }
-    sh+=`</div>`;
-    document.getElementById('app').innerHTML=sh;
-    const codeEl=document.getElementById('dash-code');
-    if(codeEl){codeEl.focus();codeEl.addEventListener('keydown',function(e){if(e.key==='Enter')dashAuth();});}
-    return;
-  }
-
-  let h=`<div class="hd"><div><h1>2026 1학기 41교구 구역보고서 화면</h1><p>${wk?.l||''} 주일</p></div>
-    <button onclick="S.showSetup=true;render()"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#908caa" stroke-width="1.5"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 11-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 11-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 11-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 110-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 112.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 114 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 112.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 110 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg></button></div>`;
-
-  // 탭: 보고서 / URL관리
-  h+=`<div style="display:flex;gap:0;margin:0 12px 4px;background:#e4e1d8;border-radius:8px;padding:2px">
-    <button onclick="S.tab='report';render()" style="flex:1;padding:6px;border:none;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;${S.tab==='report'?'background:#fff;color:#1a1a2e':'background:transparent;color:#908caa'}">보고서</button>
-    <button onclick="S.tab='urls';loadUrls()" style="flex:1;padding:6px;border:none;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;${S.tab==='urls'?'background:#fff;color:#1a1a2e':'background:transparent;color:#908caa'}">교구 URL 관리</button>
-  </div>`;
-
-  // ═══ URL 관리 탭 ═══
-  if(S.tab==='urls'){
-    h+=`<div class="url-sec"><div class="url-title"><span>교구별 배포 URL 관리</span></div>`;
-    if(!S.urls){h+=`<div class="msg">로딩 중...</div>`;}
-    else{
-      h+=`<table class="url-tbl"><tr><th style="width:65px">교구명</th><th>배포 URL</th><th style="width:50px">상태</th><th style="width:80px">최종요청</th><th style="width:40px"></th></tr>`;
-      PARISHES.forEach(p=>{
-        const pn=p+'구역';
-        const u=S.urls.find(x=>x.parish_name===pn);
-        const hasUrl=u&&u.script_url&&u.script_url.length>10;
-        const lastReq=u&&u.last_request?u.last_request.substring(5,16):'';
-        h+=`<tr><td style="font-weight:700;font-size:11px">${pn}</td>`;
-        h+=`<td><input id="pu-${p}" placeholder="Apps Script URL" value="${hasUrl?u.script_url:''}" style="font-size:9px"></td>`;
-        h+=`<td>${hasUrl?'<span class="st-ok">등록</span>':'<span class="st-no">미등록</span>'}</td>`;
-        h+=`<td style="font-size:9px;color:#908caa">${lastReq}</td>`;
-        h+=`<td><button onclick="saveParishUrl('${p}')">저장</button></td></tr>`;
-      });
-      h+=`</table>`;
-      h+=`<p style="font-size:10px;color:#908caa;margin-top:8px;line-height:1.5">* 각 교구 시트의 Apps Script 배포 URL을 입력하세요<br>* 저장하면 URL탭에 반영됩니다<br>* DATA 조회 시 등록된 URL에서 데이터를 수집합니다</p>`;
-    }
-    h+=`</div>`;
-    document.getElementById('app').innerHTML=h;return;
-  }
-
-  // ═══ 보고서 탭 ═══
-  h+=`<div class="tabs">`;
-  sundays.forEach(s=>{h+=`<button class="${s.k===S.week?'on':''}" onclick="setW('${s.k}')">${s.l}</button>`;});
-  h+=`</div>`;
-
-  h+=`<div class="ctrl">
-    <button class="c1" onclick="fetchData()" ${S.loading?'disabled':''}>${S.loading?'수집 및 조회 중...':'📊 DATA 조회'}</button>`;
-  if(S.data)h+=`<span class="info">${S.data.length}건 · ${PARISHES.filter(p=>ag&&ag[p]?.n>0).length}개 교구</span>`;
-  h+=`</div>`;
-
-  if(!S.data){h+=`<div class="msg">주차를 선택하고 <b>DATA 조회</b>를 누르면<br>각 교구 URL에서 데이터를 수집하여 표시합니다</div>`;document.getElementById('app').innerHTML=h;requestAnimationFrame(()=>{const a=document.querySelector('.tabs .on');if(a)a.scrollIntoView({inline:'center',behavior:'auto'});});return;}
-  if(!ag||S.data.length===0){h+=`<div class="msg">해당 주 데이터 없음</div>`;document.getElementById('app').innerHTML=h;return;}
-
-  // 요약
-  const tAtt=S.data.filter(r=>r.attendance==='O'||r.attendance===true).length;
-  const tScore=PARISHES.reduce((s,p)=>s+ag[p].total,0);
-  h+=`<div class="cards"><div class="cd"><div class="v">${PARISHES.filter(p=>ag[p].n>0).length}</div><div class="l">교구</div></div>
-    <div class="cd"><div class="v">${tAtt}</div><div class="l">총출석</div></div>
-    <div class="cd"><div class="v">${tScore.toLocaleString()}</div><div class="l">총점</div></div></div>`;
-
-  // ═══ 테이블 ═══
-  h+=`<div class="tw"><table class="rt">`;
-  h+=`<tr><th rowspan="2" style="position:sticky;left:0;z-index:3;min-width:50px">구역</th><th rowspan="2">구역장</th><th class="y" colspan="3">구역장출석</th>`;
-  COLS.forEach(c=>{h+=`<th colspan="2">${c.l}<br>(${c.p})</th>`;});
-  h+=`<th rowspan="2" style="background:#0d1117">합계</th><th rowspan="2">참석자</th></tr>`;
-  h+=`<tr><th class="sub">구역장</th><th class="sub">성경</th><th class="sub">후속</th>`;
-  COLS.forEach(c=>{h+=`<th class="sub">${c.s[0]}</th><th class="sub">${c.s[1]}</th>`;});
-  h+=`</tr>`;
-
-  PARISHES.forEach(p=>{
-    const d=ag[p];
-    h+=`<tr><td class="nm">${p}</td><td style="font-size:9px">${d.leader}</td>`;
-    h+=`<td>${d.lAtt?'<span class="v">1</span>':'<span class="z">0</span>'}</td>`;
-    h+=`<td>${d.lBible>0?'<span class="v">'+d.lBible+'</span>':'<span class="z">0</span>'}</td><td class="z"></td>`;
-    COLS.forEach(c=>{
-      const it=d.items[c.k];
-      if(c.t==='n'){
-        h+=`<td>${it.sum>0?'<span class="v">'+it.sum+'</span>':'<span class="z">0</span>'}</td>`;
-        h+=`<td>${it.sc>0?'<span class="v">'+it.sc.toLocaleString()+'</span>':'<span class="z">0</span>'}</td>`;
-      }else{
-        h+=`<td>${it.cnt>0?'<span class="v">'+it.cnt+'</span>':'<span class="z">0</span>'}</td>`;
-        h+=`<td>${it.sc>0?'<span class="v">'+it.sc.toLocaleString()+'</span>':'<span class="z">0</span>'}</td>`;
-      }
-    });
-    h+=`<td class="sc">${d.total>0?d.total.toLocaleString():''}</td><td class="att">${d.att.join(', ')}</td></tr>`;
-  });
-
-  h+=`<tr class="tr"><td class="nm">합계</td><td>${PARISHES.filter(p=>ag[p].leader).length}</td>`;
-  h+=`<td>${PARISHES.reduce((s,p)=>s+ag[p].lAtt,0)}</td><td>${PARISHES.reduce((s,p)=>s+ag[p].lBible,0)}</td><td></td>`;
-  COLS.forEach(c=>{let tc=0,ts=0,tsc=0;PARISHES.forEach(p=>{const it=ag[p].items[c.k];tc+=it.cnt;ts+=it.sum;tsc+=it.sc;});h+=c.t==='n'?`<td>${ts}</td><td>${tsc.toLocaleString()}</td>`:`<td>${tc}</td><td>${tsc.toLocaleString()}</td>`;});
-  h+=`<td class="sc">${tScore.toLocaleString()}</td><td></td></tr></table></div>`;
-
-  // 순위
-  const sorted=[...PARISHES].sort((a,b)=>ag[b].total-ag[a].total);
-  const mx=sorted.length?ag[sorted[0]].total:1;
-  const cl=['#1a237e','#283593','#303f9f','#3949ab','#3f51b5','#5c6bc0','#7986cb','#9fa8da','#c5cae9','#d1c4e9','#e8eaf6'];
-  h+=`<div class="bs"><div class="bs-t">총점 순위</div>`;
-  sorted.forEach((p,i)=>{const sc=ag[p].total,pct=mx>0?Math.round(sc/mx*100):0;h+=`<div class="br"><span class="br-l">${p}</span><div class="br-bg"><div class="br-f" style="width:${pct}%;background:${cl[i]}"></div></div><span class="br-v">${sc.toLocaleString()}</span></div>`;});
-  h+=`</div>`;
-
-  document.getElementById('app').innerHTML=h;
-  requestAnimationFrame(()=>{const a=document.querySelector('.tabs .on');if(a)a.scrollIntoView({inline:'center',behavior:'auto'});});
+  if(!D.ready){renderLogin();return;}
+  const wk=sundays.find(s=>s.k===D.week),ag=calc();
+  let h=`<div class="hd"><div><h1>41교구 구역보고서</h1><p>${wk?.l||''} 주일</p></div><button onclick="doLogout()"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#908caa" stroke-width="1.5"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9"/></svg></button></div>`;
+  h+=`<div class="tabs">`;sundays.forEach(s=>{h+=`<button class="${s.k===D.week?'on':''}" onclick="setW('${s.k}')">${s.l}</button>`;});h+=`</div>`;
+  h+=`<div class="ctrl"><button class="c1" onclick="loadData()" ${D.loading?'disabled':''}>${D.loading?'조회 중...':'📊 DATA 조회'}</button>`;if(D.data)h+=`<span class="info">${D.data.length}건</span>`;h+=`</div>`;
+  if(!D.data){h+=`<div class="msg">주차 선택 → DATA 조회</div>`;document.getElementById('app').innerHTML=h;requestAnimationFrame(()=>{const a=document.querySelector('.tabs .on');if(a)a.scrollIntoView({inline:'center',behavior:'auto'});});return;}
+  if(!ag||!D.data.length){h+=`<div class="msg">데이터 없음</div>`;document.getElementById('app').innerHTML=h;return;}
+  const tAtt=D.data.filter(r=>r.attendance==='O').length,tScore=PARISHES.reduce((s,p)=>s+ag[p].total,0);
+  h+=`<div class="cards"><div class="cd"><div class="v">${PARISHES.filter(p=>ag[p].n>0).length}</div><div class="l">교구</div></div><div class="cd"><div class="v">${tAtt}</div><div class="l">총출석</div></div><div class="cd"><div class="v">${tScore.toLocaleString()}</div><div class="l">총점</div></div></div>`;
+  h+=`<div class="tw"><table class="rt"><tr><th rowspan="2" style="position:sticky;left:0;z-index:3;min-width:50px">구역</th><th rowspan="2">구역장</th><th class="y" colspan="2">구역장출석</th>`;COLS.forEach(c=>{h+=`<th colspan="2">${c.l}<br>(${c.p})</th>`;});h+=`<th rowspan="2" style="background:#0d1117">합계</th><th rowspan="2">참석자</th></tr><tr><th class="sub">출석</th><th class="sub">성경</th>`;COLS.forEach(c=>{h+=`<th class="sub">${c.s[0]}</th><th class="sub">${c.s[1]}</th>`;});h+=`</tr>`;
+  PARISHES.forEach(p=>{const d=ag[p];h+=`<tr><td class="nm">${p}</td><td style="font-size:9px">${d.leader}</td><td>${d.lAtt?'<span class="v">1</span>':'<span class="z">0</span>'}</td><td>${d.lBible>0?'<span class="v">'+d.lBible+'</span>':'<span class="z">0</span>'}</td>`;COLS.forEach(c=>{const it=d.items[c.k];h+=c.t==='n'?`<td>${it.sum>0?'<span class="v">'+it.sum+'</span>':'<span class="z">0</span>'}</td><td>${it.sc>0?'<span class="v">'+it.sc.toLocaleString()+'</span>':'<span class="z">0</span>'}</td>`:`<td>${it.cnt>0?'<span class="v">'+it.cnt+'</span>':'<span class="z">0</span>'}</td><td>${it.sc>0?'<span class="v">'+it.sc.toLocaleString()+'</span>':'<span class="z">0</span>'}</td>`;});h+=`<td class="sc">${d.total>0?d.total.toLocaleString():''}</td><td class="att">${d.att.join(', ')}</td></tr>`;});
+  h+=`<tr class="tr"><td class="nm">합계</td><td>${PARISHES.filter(p=>ag[p].leader).length}</td><td>${PARISHES.reduce((s,p)=>s+ag[p].lAtt,0)}</td><td>${PARISHES.reduce((s,p)=>s+ag[p].lBible,0)}</td>`;COLS.forEach(c=>{let tc=0,ts=0,tsc=0;PARISHES.forEach(p=>{const it=ag[p].items[c.k];tc+=it.cnt;ts+=it.sum;tsc+=it.sc;});h+=c.t==='n'?`<td>${ts}</td><td>${tsc.toLocaleString()}</td>`:`<td>${tc}</td><td>${tsc.toLocaleString()}</td>`;});h+=`<td class="sc">${tScore.toLocaleString()}</td><td></td></tr></table></div>`;
+  const sorted=[...PARISHES].sort((a,b)=>ag[b].total-ag[a].total),mx=sorted.length?ag[sorted[0]].total:1,cl=['#1a237e','#283593','#303f9f','#3949ab','#3f51b5','#5c6bc0','#7986cb','#9fa8da','#c5cae9','#d1c4e9','#e8eaf6'];
+  h+=`<div class="bs"><div class="bs-t">총점 순위</div>`;sorted.forEach((p,i)=>{const sc=ag[p].total,pct=mx>0?Math.round(sc/mx*100):0;h+=`<div class="br"><span class="br-l">${p}</span><div class="br-bg"><div class="br-f" style="width:${pct}%;background:${cl[i]}"></div></div><span class="br-v">${sc.toLocaleString()}</span></div>`;});h+=`</div>`;
+  document.getElementById('app').innerHTML=h;requestAnimationFrame(()=>{const a=document.querySelector('.tabs .on');if(a)a.scrollIntoView({inline:'center',behavior:'auto'});});
 }
 
-async function saveDashGateway(){
-  const el=document.getElementById('dgw-input');
-  const u=el?el.value.trim():'';
-  if(!u){toast('URL을 입력해주세요');return;}
-  S.gatewayUrl=u;
-  await sset('ch:gateway',u);
-  toast('게이트웨이 저장 완료!');
-  render();
-}
-
-async function getDashGateway(){
-  if(GATEWAY_URL&&GATEWAY_URL.length>10)return GATEWAY_URL;
-  if(S.gatewayUrl&&S.gatewayUrl.length>10)return S.gatewayUrl;
-  const saved=await sget('ch:gateway');
-  if(saved&&saved.length>10){S.gatewayUrl=saved;return saved;}
-  return null;
-}
-
-async function dashAuth(){
-  const el=document.getElementById('dash-code');
-  const errEl=document.getElementById('dash-error');
-  const btn=document.getElementById('dash-auth-btn');
-  if(!el)return;
-  const code=el.value.trim();
-  if(!code){if(errEl){errEl.textContent='접속코드를 입력해주세요';errEl.style.display='block';}return;}
-
-  const gw=await getDashGateway();
-  if(!gw){if(errEl){errEl.textContent='게이트웨이 URL이 설정되지 않았습니다';errEl.style.display='block';}return;}
-
-  if(btn){btn.disabled=true;btn.textContent='인증 중...';}
-  if(errEl)errEl.style.display='none';
-
-  try{
-    const res=await fetch(gw+'?action=auth&code='+encodeURIComponent(code),{redirect:'follow'});
-    const text=await res.text();
-    if(text.startsWith('<'))throw new Error('연결 실패');
-    const json=JSON.parse(text);
-    if(json.status==='ok'){
-      // admin41 코드 → 게이트웨이 자체가 대시보드 URL
-      S.url=gw;
-      await sset(DK,gw);
-      await sset('ch:gateway',gw);
-      S.gatewayUrl=gw;
-      toast('접속 성공! '+(json.parish_name||''));
-      S.showSetup=false;render();return;
-    }else{if(errEl){errEl.textContent=json.message||'인증 실패';errEl.style.display='block';}}
-  }catch(e){if(errEl){errEl.textContent='서버 연결 실패 — URL을 확인해주세요';errEl.style.display='block';}}
-  if(btn){btn.disabled=false;btn.textContent='접속';}
-}
-
-async function clearDashUrl(){S.url='';await sset(DK,'');toast('연결 해제됨');S.showSetup=false;render();}
-
-// INIT: 자동 로그인
+// INIT
 (async function(){
-  document.getElementById('app').innerHTML='<div style="min-height:100vh;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:8px"><div style="font-size:38px">📊</div><div style="font-size:16px;font-weight:700;color:#1a1a2e">41교구 구역보고서</div><div style="font-size:12px;color:#908caa">불러오는 중...</div></div>';
-
-  // 게이트웨이 URL 로드
-  const savedGw=await sget('ch:gateway');
-  if(savedGw&&savedGw.length>10)S.gatewayUrl=savedGw;
-  else if(GATEWAY_URL&&GATEWAY_URL.length>10){S.gatewayUrl=GATEWAY_URL;await sset('ch:gateway',GATEWAY_URL);}
-
-  const url=await sget(DK);
-  if(url&&url.length>10){S.url=url;S.showSetup=false;}
-  render();
+  document.getElementById('app').innerHTML='<div style="min-height:100vh;display:flex;align-items:center;justify-content:center"><div style="font-size:12px;color:#908caa">불러오는 중...</div></div>';
+  const{data:{session}}=await sb.auth.getSession();
+  if(session)await onAuth(session.user);
+  else renderLogin();
 })();
 </script>
