@@ -542,7 +542,27 @@ function renderSetup(){
       <span style="font-size:13px;color:#2e7d32;font-weight:700">✓ 연결됨</span>
     </div>
     <button class="bp" style="width:100%;margin-bottom:12px;padding:14px;font-size:16px" onclick="goToApp()">체크리스트 시작 →</button>
-    <button onclick="clearUrl()" style="width:100%;padding:10px;border:2px solid #e0ddd4;border-radius:10px;background:#fff;font-size:13px;font-weight:600;color:#c0392b;cursor:pointer">연결 해제 (재인증)</button>`;
+
+    <details style="margin-top:8px;text-align:left">
+      <summary style="font-size:12px;color:#6b6558;font-weight:700;cursor:pointer">연결 상태 확인</summary>
+      <div style="margin-top:8px">
+        <p style="font-size:10px;color:#908caa;margin-bottom:4px">저장된 구역 URL:</p>
+        <div style="font-size:9px;background:#f4f2ed;padding:8px;border-radius:6px;word-break:break-all;margin-bottom:8px">${state.url}</div>
+        <button onclick="testConnection()" id="test-btn" style="width:100%;padding:9px;border:none;border-radius:8px;background:#2e7d32;color:#fff;font-size:12px;font-weight:700;cursor:pointer;margin-bottom:4px">연결 테스트</button>
+        <div id="test-result" style="font-size:11px;margin-top:4px"></div>
+      </div>
+    </details>
+
+    <details style="margin-top:8px;text-align:left">
+      <summary style="font-size:12px;color:#c0392b;font-weight:700;cursor:pointer">URL 직접 입력 (연결 안될 때)</summary>
+      <div style="margin-top:8px">
+        <p style="font-size:10px;color:#6b6558;margin-bottom:6px">4133구역 Apps Script 배포 URL</p>
+        <input id="direct-url" type="text" placeholder="https://script.google.com/macros/s/..." style="width:100%;padding:10px;border:2px solid #e0ddd4;border-radius:8px;font-size:11px;outline:none;margin-bottom:6px;box-sizing:border-box">
+        <button onclick="saveDirectUrl()" style="width:100%;padding:9px;border:none;border-radius:8px;background:#1a237e;color:#fff;font-size:12px;font-weight:700;cursor:pointer">URL 직접 저장</button>
+      </div>
+    </details>
+
+    <button onclick="clearUrl()" style="width:100%;margin-top:12px;padding:10px;border:2px solid #e0ddd4;border-radius:10px;background:#fff;font-size:13px;font-weight:600;color:#c0392b;cursor:pointer">연결 해제 (재인증)</button>`;
   }else{
     h+=`<p style="font-size:13px;color:#6b6558;line-height:1.5;margin-bottom:16px">접속코드를 입력하세요</p>
     <div id="auth-error" style="display:none;color:#c0392b;font-size:12px;font-weight:600;margin-bottom:8px;text-align:center"></div>
@@ -711,6 +731,43 @@ async function clearLocalCache(){
 }
 function showSetup(){state.ready=false;render();}
 
+// ═══ 연결 테스트 ═══
+async function testConnection(){
+  const el=document.getElementById('test-result');
+  const btn=document.getElementById('test-btn');
+  if(!el)return;
+  if(btn){btn.disabled=true;btn.textContent='테스트 중...';}
+  el.innerHTML='<span style="color:#908caa">연결 중...</span>';
+
+  try{
+    const res=await fetch(state.url+'?action=ping',{redirect:'follow'});
+    const text=await res.text();
+    if(text.startsWith('<')){
+      el.innerHTML='<span style="color:#c0392b">✗ 실패 — HTML 반환 (Apps Script 재배포 필요)</span>';
+    }else{
+      const json=JSON.parse(text);
+      if(json.status==='ok'){
+        el.innerHTML='<span style="color:#2e7d32">✓ 연결 성공!</span>';
+      }else{
+        el.innerHTML='<span style="color:#c0392b">✗ 응답: '+JSON.stringify(json)+'</span>';
+      }
+    }
+  }catch(e){
+    el.innerHTML='<span style="color:#c0392b">✗ 연결 실패: '+e.message+'</span>';
+  }
+  if(btn){btn.disabled=false;btn.textContent='연결 테스트';}
+}
+
+// ═══ URL 직접 저장 ═══
+async function saveDirectUrl(){
+  const el=document.getElementById('direct-url');
+  const u=el?el.value.trim():'';
+  if(!u){toast('URL을 입력해주세요');return;}
+  state.url=u;
+  await sset(UK,u);
+  toast('URL 직접 저장 완료!');
+  render();
+}
 // ═══ INIT (자동 로그인) ═══
 (async function(){
   document.getElementById('app').innerHTML='<div style="min-height:100vh;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:8px"><div style="font-size:38px">⛪</div><div style="font-size:16px;font-weight:700;color:#1e2a1f">'+P_LABEL+' 체크리스트</div><div style="font-size:12px;color:#908caa">불러오는 중...</div></div>';
