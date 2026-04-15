@@ -422,7 +422,7 @@ function _render(){
 
   // 데이터 출처 표시
   if(state.dataSource==='sheet')h+=`<div class="src-bar sheet">구글 시트에서 불러옴</div>`;
-  else if(state.dataSource==='local')h+=`<div class="src-bar local" style="background:#fff3e0;color:#e65100">로컬 캐시에서 불러옴 <button onclick="syncSheet()">시트 저장</button></div>`;
+  else if(state.dataSource==='local')h+=`<div class="src-bar local" style="background:#fff3e0;color:#e65100">로컬 캐시에서 불러옴 <button onclick="syncSheet()">시트 저장</button> <button onclick="clearLocalCache()">캐시 삭제</button></div>`;
   else if(state.dataSource==='empty')h+=`<div class="src-bar empty">새로운 주간입니다 <button onclick="forceLoadFromSheet()">시트에서 불러오기</button></div>`;
 
   // 현황 버튼 (보고서 뷰가 아닐 때)
@@ -697,6 +697,16 @@ async function clearUrl(){
   await sdel(UK);
   toast('연결 해제됨');
   state.ready=false;
+  render();
+}
+async function clearLocalCache(){
+  await sset(SK(state.week),'');
+  state.data=emptyAll();
+  state.dataSource='empty';
+  state.lastModified=null;
+  state.unsaved=false;
+  state.touched=new Set();
+  toast('로컬 캐시 삭제됨');
   render();
 }
 function showSetup(){state.ready=false;render();}
