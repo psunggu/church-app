@@ -74,7 +74,7 @@ var D={week:'',data:null,loading:false,ready:false};
 D.week=(function(){var c=sundays[0],now=Date.now();for(var i=0;i<sundays.length;i++){if(Math.abs(sundays[i].ts-now)<Math.abs(c.ts-now))c=sundays[i];}return c.k;})();
 function toast(m){var t=document.getElementById('toast');t.textContent=m;t.classList.add('show');setTimeout(function(){t.classList.remove('show');},2500);}
 
-async function loadData(){D.loading=true;render();var r=await sb.from('reports').select('*').eq('report_date',D.week);D.data=r.data||[];D.loading=false;toast(D.data.length>0?D.data.length+'건':'데이터 없음');render();}
+async function loadData(){D.loading=true;render();var r=await sb.from('reports').select('*').eq('report_date',D.week);D.data=r.data||[];D.loading=false;var ag=calc();var done=ag?PARISHES.filter(function(p){return ag[p].total>0;}).length:0;toast(done>0?done+'개 구역 입력 완료':'입력된 구역 없음');render();}
 function calc(){if(!D.data)return null;var r={};PARISHES.forEach(function(p){r[p]={n:0,leader:'',lAtt:0,lBible:0,items:{},total:0,att:[]};COLS.forEach(function(c){r[p].items[c.k]={cnt:0,sum:0,sc:0};});});D.data.forEach(function(row){var pid=String(row.parish_id);if(!r[pid])return;r[pid].n++;if(row.role==='구역장'){r[pid].leader=row.member_name;if(row.attendance==='O')r[pid].lAtt=1;r[pid].lBible=parseInt(row.bible_read)||0;}if(row.attendance==='O')r[pid].att.push(row.member_name);COLS.forEach(function(c){var v=row[c.k];if(c.t==='c'){if(v==='O'){r[pid].items[c.k].cnt++;r[pid].items[c.k].sc+=c.p;}}else{var n=parseInt(v)||0;if(n>0){r[pid].items[c.k].cnt++;r[pid].items[c.k].sum+=n;r[pid].items[c.k].sc+=n*c.p;}}});});PARISHES.forEach(function(p){COLS.forEach(function(c){r[p].total+=r[p].items[c.k].sc;});});return r;}
 function setW(k){D.week=k;D.data=null;render();}
 function render(){var sy=window.scrollY;_render();requestAnimationFrame(function(){window.scrollTo(0,sy);});}
@@ -119,7 +119,7 @@ function _render(){
   var ag=calc();
   var h='<div class="hd"><div><h1>41교구 구역보고서</h1><p>'+(wk?wk.l:'')+' 주일</p></div><button onclick="doLogout()"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#908caa" stroke-width="1.5"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9"/></svg></button></div>';
   h+='<div class="tabs">';for(var i=0;i<sundays.length;i++){var s=sundays[i];h+='<button class="'+(s.k===D.week?'on':'')+'" onclick="setW(\''+s.k+'\')">'+s.l+'</button>';}h+='</div>';
-  h+='<div class="ctrl"><button class="c1" onclick="loadData()" '+(D.loading?'disabled':'')+'>'+( D.loading?'조회 중...':'📊 DATA 조회')+'</button>';if(D.data)h+='<span class="info">'+D.data.length+'건</span>';h+='</div>';
+  h+='<div class="ctrl"><button class="c1" onclick="loadData()" '+(D.loading?'disabled':'')+'>'+( D.loading?'조회 중...':'📊 DATA 조회')+'</button>';if(D.data&&ag){var pDone=PARISHES.filter(function(p){return ag[p].total>0;}).length;h+='<span class="info">총 '+PARISHES.length+'개 구역 : '+pDone+'개 구역 입력 완료</span>';}h+='</div>';
   if(!D.data){h+='<div class="msg">주차 선택 → DATA 조회</div>';document.getElementById('app').innerHTML=h;requestAnimationFrame(function(){var a=document.querySelector('.tabs .on');if(a)a.scrollIntoView({inline:'center',behavior:'auto'});});return;}
   if(!ag||!D.data.length){h+='<div class="msg">데이터 없음</div>';document.getElementById('app').innerHTML=h;return;}
   var tAtt=D.data.filter(function(r){return r.attendance==='O';}).length,tScore=PARISHES.reduce(function(s,p){return s+ag[p].total;},0);
