@@ -245,13 +245,22 @@ async function loadWeek(){
   // 1단계: 구글 시트에서 불러오기 (주 저장소)
   if(state.url){
     try{
-      const fromSheet=await fetchFromSheet(state.week);
-      if(fromSheet){
-        state.data=fromSheet;
-        state.dataSource='sheet';
-        // 로컬에도 캐시
-        await sset(SK(state.week),JSON.stringify(state.data));
-        await markWeekSaved(state.week);
+      const result=await fetchFromSheet(state.week);
+
+      if(result.connected){
+        if(result.data){
+          // 시트에 데이터 있음 → 반영
+          state.data=result.data;
+          state.dataSource='sheet';
+          await sset(SK(state.week),JSON.stringify(state.data));
+          await markWeekSaved(state.week);
+        }else{
+          // 시트 연결 성공했지만 데이터 없음 → 빈 상태로 초기화
+          state.data=emptyAll();
+          state.dataSource='empty';
+          // 로컬 캐시도 비움 (시트가 진실의 원천)
+          await sset(SK(state.week),'');
+        }
         state.loading=false;
         render();
         return;
@@ -259,7 +268,7 @@ async function loadWeek(){
     }catch(e){console.log('Sheet load failed, trying local:',e);}
   }
 
-  // 2단계: 시트에 없으면 → 로컬 캐시 확인 (오프라인/백업)
+  // 2단계: 시트 연결 실패 시 → 로컬 캐시 (오프라인 백업)
   try{
     const raw=await sget(SK(state.week));
     if(raw&&raw.length>10){
@@ -269,7 +278,7 @@ async function loadWeek(){
       state.dataSource='local';
       state.loading=false;
       render();
-      toast('로컬 캐시에서 불러옴 (시트 동기화 필요)');
+      toast('오프라인 — 로컬 캐시에서 불러옴');
       return;
     }
   }catch(e){}
@@ -281,16 +290,18 @@ async function loadWeek(){
   render();
 }
 
-// ═══ 시트에서 데이터 가져오기 (공통) ═══
+// ═══ 시트에서 데이터 가져오기 ═══
+// 반환: { connected: bool, data: object|null }
 async function fetchFromSheet(weekKey){
-  if(!state.url)return null;
+  if(!state.url)return {connected:false,data:null};
   try{
     const url=state.url+'?action=read&date='+encodeURIComponent(weekKey)+'&parish='+P_ID;
     const res=await fetch(url,{redirect:'follow'});
     const text=await res.text();
-    // Apps Script 가 HTML 을 반환하는 경우 (리다이렉트 실패)
-    if(text.startsWith('<')){console.log('Sheet returned HTML, not JSON');return null;}
+    if(text.startsWith('<'))return {connected:false,data:null};
     const json=JSON.parse(text);
+
+    // 연결 성공
     if(json.rows&&json.rows.length>0){
       const loaded=emptyAll();
       json.rows.forEach(r=>{
@@ -303,13 +314,13 @@ async function fetchFromSheet(weekKey){
           else if(item.t==='n')loaded[name][appKey]=val?String(val):'';
         });
       });
-      return loaded;
+      return {connected:true,data:loaded};
     }
-    return null;
+    // 연결 성공했지만 데이터 0건
+    return {connected:true,data:null};
   }catch(e){
     console.log('fetchFromSheet error:',e);
-    state._lastError='시트 읽기 실패: '+e.message;
-    return null;
+    return {connected:false,data:null};
   }
 }
 
@@ -317,14 +328,21 @@ async function fetchFromSheet(weekKey){
 async function forceLoadFromSheet(){
   if(!state.url){toast('시트 연동이 필요합니다');return;}
   state.loading=true;render();
-  const fromSheet=await fetchFromSheet(state.week);
-  if(fromSheet){
-    state.data=fromSheet;
-    state.dataSource='sheet';
-    await sset(SK(state.week),JSON.stringify(state.data));
-    await markWeekSaved(state.week);
-    toast('시트에서 새로 불러왔습니다');
-  }else{toast('시트에 해당 주 데이터가 없습니다');}
+  const result=await fetchFromSheet(state.week);
+  if(result.connected){
+    if(result.data){
+      state.data=result.data;
+      state.dataSource='sheet';
+      await sset(SK(state.week),JSON.stringify(state.data));
+      await markWeekSaved(state.week);
+      toast('시트에서 불러왔습니다');
+    }else{
+      state.data=emptyAll();
+      state.dataSource='empty';
+      await sset(SK(state.week),'');
+      toast('시트에 해당 주 데이터가 없습니다');
+    }
+  }else{toast('시트 연결 실패');}
   state.loading=false;render();
 }
 
