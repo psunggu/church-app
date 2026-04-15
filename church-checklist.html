@@ -183,7 +183,7 @@ async function doLogin(){
   const idEl=document.getElementById('login-id'),pwEl=document.getElementById('login-pw');
   const errEl=document.getElementById('login-err'),btn=document.getElementById('login-btn');
   const uid=(idEl?idEl.value.trim():''),pw=(pwEl?pwEl.value:'');
-  if(!uid||!pw){if(errEl){errEl.textContent='아이디와 비밀번호를 입력하세요';errEl.style.display='block';}return;}
+  if(!uid||!pw){if(error){if(errEl){errEl.textContent=error.message+' | '+email+' | '+pw;errEl.style.display='block';}return;}
   if(btn){btn.disabled=true;btn.textContent='로그인 중...';}
   if(errEl)errEl.style.display='none';
 

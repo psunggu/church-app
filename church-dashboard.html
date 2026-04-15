@@ -95,7 +95,7 @@ async function doLogin(){
   if(errEl)errEl.style.display='none';
   const email=(uid==='admin')?'admin@c41.app':`u${uid}@c41.app`;
   const{data,error}=await sb.auth.signInWithPassword({email,password:pw});
-  if(error){if(errEl){errEl.textContent='아이디 또는 비밀번호가 올바르지 않습니다';errEl.style.display='block';}if(btn){btn.disabled=false;btn.textContent='로그인';}return;}
+  if(error){if(errEl){errEl.textContent=error.message+' | '+email+' | '+pw;errEl.style.display='block';}if(btn){btn.disabled=false;btn.textContent='로그인';}return;}
   await onAuth(data.user);
 }
 
