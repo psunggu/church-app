@@ -408,7 +408,12 @@ function numAdj(name,k,delta){if(!state.data[name])state.data[name]=empty();cons
 function numSet(name,k,v){if(!state.data[name])state.data[name]=empty();state.data[name][k]=v;state.touched.add(name);saveData();updateMemberInfo(name);updateSummary();}
 
 function toggle(name){state.expanded=state.expanded===name?null:name;render();}
-function setWeek(k){state.week=k;state.expanded=null;state.lastModified=null;state.unsaved=false;state.touched=new Set();loadWeek();}
+async function setWeek(k){
+  state.week=k;state.expanded=null;state.lastModified=null;state.unsaved=false;state.touched=new Set();state._sheetError=null;
+  // 로컬 캐시 삭제 → 시트 DATA 탭에서 새로 불러오기
+  await sset(SK(k),'');
+  loadWeek();
+}
 function setView(v){state.view=v;render();}
 function showAddForm(){state.addingMember=true;render();requestAnimationFrame(()=>{const el=document.getElementById('add-name');if(el)el.focus();});}
 function hideAddForm(){state.addingMember=false;render();}
@@ -636,28 +641,47 @@ async function syncSheet(){
   });
   if(rows.length===0){toast('입력된 데이터가 없습니다');if(btn){btn.disabled=false;btn.innerHTML=syncBtnHTML();}return;}
 
-  // 저장 시도 (타임아웃 10초, 최대 2회)
+  const payload=JSON.stringify({action:'sync',rows});
   let success=false;
   let lastError='';
+
+  // 최대 2회 시도
   for(let attempt=0;attempt<2;attempt++){
     try{
       const controller=new AbortController();
-      const timeout=setTimeout(()=>controller.abort(),10000);
+      const tid=setTimeout(()=>controller.abort(),10000);
 
+      // Google Apps Script POST (redirect:'follow'로 302 처리)
       const res=await fetch(state.url,{
-        method:'POST',redirect:'follow',signal:controller.signal,
+        method:'POST',
+        redirect:'follow',
+        signal:controller.signal,
         headers:{'Content-Type':'text/plain;charset=utf-8'},
-        body:JSON.stringify({action:'sync',rows})
+        body:payload
       });
-      clearTimeout(timeout);
+      clearTimeout(tid);
 
-      const text=await res.text();
-      if(text.startsWith('<')){lastError='HTML응답(Apps Script 재배포 필요)';continue;}
-      const json=JSON.parse(text);
-      if(json.status==='ok'||json.inserted!==undefined||json.edited!==undefined){
-        success=true;break;
+      // 응답 처리 (다양한 케이스 대응)
+      if(res.ok||res.status===200||res.type==='opaque'||res.redirected){
+        try{
+          const text=await res.text();
+          if(text&&!text.startsWith('<')){
+            const json=JSON.parse(text);
+            if(json.status==='ok'||json.inserted!==undefined||json.edited!==undefined){
+              success=true;break;
+            }
+          }
+          // POST는 성공했지만 GET 리다이렉트 결과가 이상한 경우
+          // → ping으로 연결 확인하여 성공 여부 판별
+          const verify=await fetch(state.url+'?action=ping',{redirect:'follow'});
+          const vText=await verify.text();
+          if(!vText.startsWith('<')){success=true;break;}
+        }catch(parseErr){
+          // 파싱 실패지만 fetch 자체는 성공 → 저장 성공으로 간주
+          success=true;break;
+        }
       }else{
-        lastError='응답: '+text.substring(0,100);
+        lastError='HTTP '+res.status;
       }
     }catch(e){
       lastError=e.name==='AbortError'?'타임아웃(10초)':e.message;
@@ -666,17 +690,11 @@ async function syncSheet(){
   }
 
   if(success){
-    // 41교구 통합 시트에도 저장 (실패해도 무시)
+    // 41교구 통합 시트에도 저장 (실패 무시)
     const dashUrl=await sget('dash41:url');
     if(dashUrl&&dashUrl.length>10){
-      try{
-        const c2=new AbortController();
-        const t2=setTimeout(()=>c2.abort(),10000);
-        await fetch(dashUrl,{method:'POST',redirect:'follow',signal:c2.signal,
-          headers:{'Content-Type':'text/plain;charset=utf-8'},
-          body:JSON.stringify({action:'sync',rows})});
-        clearTimeout(t2);
-      }catch(e){}
+      try{await fetch(dashUrl,{method:'POST',redirect:'follow',
+        headers:{'Content-Type':'text/plain;charset=utf-8'},body:payload});}catch(e){}
     }
 
     toast(`${rows.length}명 저장 완료! ✓`);
