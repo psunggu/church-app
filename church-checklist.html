@@ -569,6 +569,7 @@ function _render(){
   h+=`<div class="ft">`;
   if(state.url){
     h+=`<button class="bp" id="sync-btn" onclick="syncSheet()">${syncBtnHTML()}</button>`;
+    if(state._pendingSync)h+=`<button class="bp" style="background:#e65100;flex:0.5" onclick="retrySync()">재시도</button>`;
     h+=`<button class="bo" onclick="exportCSV()"><svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3" stroke="#1e2a1f" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>`;
   }else h+=`<button class="bp" onclick="exportCSV()">CSV 다운로드</button>`;
   h+=`</div>`;
@@ -658,67 +659,82 @@ async function syncSheet(){
   });
   if(rows.length===0){toast('입력된 데이터가 없습니다');if(btn){btn.disabled=false;btn.innerHTML=syncBtnHTML();}return;}
 
+  // 1단계: 로컬 즉시 저장 (절대 실패 안 함)
+  await sset(SK(state.week),JSON.stringify(state.data));
+  await markWeekSaved(state.week);
+  state.unsaved=false;
+  state.touched=new Set();
+  const uel=document.getElementById('unsaved-badge');
+  if(uel)uel.style.display='none';
+
+  // 2단계: 시트 저장 (백그라운드, 최대 3회 재시도)
   const payload=JSON.stringify({action:'sync',rows});
-  let success=false;
-  let lastError='';
-
-  // 최대 2회 시도 (6초 타임아웃)
-  for(let attempt=0;attempt<2;attempt++){
-    try{
-      const controller=new AbortController();
-      const tid=setTimeout(()=>controller.abort(),6000);
-
-      const res=await fetch(state.url,{
-        method:'POST',
-        redirect:'follow',
-        signal:controller.signal,
-        headers:{'Content-Type':'text/plain;charset=utf-8'},
-        body:payload
-      });
-      clearTimeout(tid);
-
-      if(res.ok||res.status===200||res.type==='opaque'||res.redirected){
-        try{
-          const text=await res.text();
-          if(text&&!text.startsWith('<')){
-            const json=JSON.parse(text);
-            if(json.status==='ok'||json.inserted!==undefined||json.edited!==undefined){
-              success=true;break;
-            }
-          }
-        }catch(parseErr){
-          success=true;break;
-        }
-      }else{
-        lastError='HTTP '+res.status;
-      }
-    }catch(e){
-      lastError=e.name==='AbortError'?'타임아웃':e.message;
-      if(attempt===0)await new Promise(r=>setTimeout(r,300));
-    }
-  }
-
-  if(success){
-    // 41교구 통합 시트에도 저장 (병렬, 실패 무시)
-    const dashUrl=await sget('dash41:url');
-    if(dashUrl&&dashUrl.length>10){
-      fetch(dashUrl,{method:'POST',redirect:'follow',
-        headers:{'Content-Type':'text/plain;charset=utf-8'},body:payload}).catch(()=>{});
-    }
-
-    toast(`${rows.length}명 저장 완료! ✓`);
-    state.unsaved=false;
-    state.touched=new Set();
-    state.dataSource='sheet';
-    state._sheetError=null;
-    const uel=document.getElementById('unsaved-badge');
-    if(uel)uel.style.display='none';
-    await sset(SK(state.week),JSON.stringify(state.data));
-    await markWeekSaved(state.week);
-  }else{
-    toast('저장 실패: '+lastError);
-  }
+  toast(`${rows.length}명 로컬 저장 ✓ 시트 동기화 중...`);
   if(btn){btn.disabled=false;btn.innerHTML=syncBtnHTML();}
+
+  syncToSheet(payload,rows.length,0);
+}
+
+// 시트 동기화 (백그라운드, 자동 재시도)
+async function syncToSheet(payload,count,attempt){
+  const MAX=3;
+  try{
+    const controller=new AbortController();
+    const tid=setTimeout(()=>controller.abort(),15000); // Apps Script 콜드스타트 대응 15초
+
+    const res=await fetch(state.url,{
+      method:'POST',redirect:'follow',signal:controller.signal,
+      headers:{'Content-Type':'text/plain;charset=utf-8'},
+      body:payload
+    });
+    clearTimeout(tid);
+
+    let ok=false;
+    if(res.ok||res.status===200||res.type==='opaque'||res.redirected){
+      try{
+        const text=await res.text();
+        if(text&&!text.startsWith('<')){
+          const json=JSON.parse(text);
+          if(json.status==='ok'||json.inserted!==undefined)ok=true;
+        }
+      }catch(e){ok=true;} // 파싱 실패지만 fetch 성공
+    }
+
+    if(ok){
+      state.dataSource='sheet';
+      toast(`${count}명 시트 저장 완료! ✓`);
+
+      // 41교구 통합 시트에도 저장 (병렬, 실패 무시)
+      const dashUrl=await sget('dash41:url');
+      if(dashUrl&&dashUrl.length>10){
+        fetch(dashUrl,{method:'POST',redirect:'follow',
+          headers:{'Content-Type':'text/plain;charset=utf-8'},body:payload}).catch(()=>{});
+      }
+      return;
+    }
+  }catch(e){}
+
+  // 실패 → 재시도
+  if(attempt<MAX-1){
+    const delay=(attempt+1)*2000; // 2초, 4초 대기 후 재시도
+    toast(`시트 동기화 재시도 중... (${attempt+2}/${MAX})`);
+    setTimeout(()=>syncToSheet(payload,count,attempt+1),delay);
+  }else{
+    toast('시트 동기화 실패 — 로컬에는 저장됨');
+    // 미동기화 데이터 표시
+    state._pendingSync=payload;
+  }
+}
+
+// 미동기화 데이터 수동 재시도
+function retrySync(){
+  if(state._pendingSync){
+    toast('시트 동기화 재시도...');
+    const payload=state._pendingSync;
+    state._pendingSync=null;
+    render();
+    syncToSheet(payload,0,0);
+  }
 }
 
 function exportCSV(){
