@@ -219,19 +219,24 @@ function _render(){
         <button style="width:100%;padding:12px;border:none;border-radius:10px;background:linear-gradient(135deg,#1a1a2e,#16213e);color:#fff;font-size:15px;font-weight:700;cursor:pointer;margin-bottom:10px" onclick="S.showSetup=false;render()">보고서 화면으로 →</button>
         <button onclick="clearDashUrl()" style="width:100%;padding:10px;border:2px solid #ddd8ef;border-radius:10px;background:#fff;font-size:13px;font-weight:600;color:#c0392b;cursor:pointer">연결 해제 (재인증)</button>`;
     }else{
+      const hasGw=!!(GATEWAY_URL&&GATEWAY_URL.length>10)||(S.gatewayUrl&&S.gatewayUrl.length>10);
+
       sh+=`<p style="color:#908caa;font-size:13px;margin-bottom:16px">관리자 접속코드를 입력하세요</p>
         <div id="dash-error" style="display:none;color:#c0392b;font-size:12px;font-weight:600;margin-bottom:8px"></div>
         <input id="dash-code" type="text" maxlength="20" placeholder="접속코드 입력" autocomplete="off" style="width:100%;padding:14px;border:2px solid #ddd8ef;border-radius:12px;font-size:18px;font-weight:700;text-align:center;outline:none;margin-bottom:10px;letter-spacing:3px">
         <button id="dash-auth-btn" onclick="dashAuth()" style="width:100%;padding:14px;border:none;border-radius:12px;background:linear-gradient(135deg,#1a1a2e,#16213e);color:#fff;font-size:16px;font-weight:700;cursor:pointer">접속</button>
-        <p style="font-size:10px;color:#908caa;margin-top:12px">접속코드는 목사님 또는 관리자에게 문의하세요</p>
-        <details style="margin-top:16px;text-align:left">
-          <summary style="font-size:11px;color:#908caa;cursor:pointer">관리자 설정</summary>
+        <p style="font-size:10px;color:#908caa;margin-top:12px">접속코드는 목사님 또는 관리자에게 문의하세요</p>`;
+
+      if(!hasGw){
+        sh+=`<details style="margin-top:16px;text-align:left" open>
+          <summary style="font-size:11px;color:#c0392b;cursor:pointer;font-weight:700">▶ 게이트웨이 설정 필요</summary>
           <div style="margin-top:8px">
             <p style="font-size:11px;color:#6b6558;margin-bottom:6px">게이트웨이 URL (41교구 Apps Script URL)</p>
-            <input id="dgw-input" type="text" placeholder="https://script.google.com/macros/s/..." value="${S.gatewayUrl||''}" style="width:100%;padding:10px;border:2px solid #ddd8ef;border-radius:8px;font-size:11px;outline:none;margin-bottom:6px;box-sizing:border-box">
+            <input id="dgw-input" type="text" placeholder="https://script.google.com/macros/s/..." value="" style="width:100%;padding:10px;border:2px solid #ddd8ef;border-radius:8px;font-size:11px;outline:none;margin-bottom:6px;box-sizing:border-box">
             <button onclick="saveDashGateway()" style="width:100%;padding:9px;border:none;border-radius:8px;background:#1a237e;color:#fff;font-size:12px;font-weight:700;cursor:pointer">게이트웨이 저장</button>
           </div>
         </details>`;
+      }
     }
     sh+=`</div>`;
     document.getElementById('app').innerHTML=sh;
@@ -364,7 +369,7 @@ async function dashAuth(){
   if(!code){if(errEl){errEl.textContent='접속코드를 입력해주세요';errEl.style.display='block';}return;}
 
   const gw=await getDashGateway();
-  if(!gw){if(errEl){errEl.textContent='게이트웨이 URL을 먼저 설정해주세요 (아래 관리자 설정)';errEl.style.display='block';}return;}
+  if(!gw){if(errEl){errEl.textContent='게이트웨이 URL이 설정되지 않았습니다';errEl.style.display='block';}return;}
 
   if(btn){btn.disabled=true;btn.textContent='인증 중...';}
   if(errEl)errEl.style.display='none';
