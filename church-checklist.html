@@ -174,24 +174,23 @@ async function delMember(name){
   var pw=prompt('구역원을 삭제하려면 관리자 비밀번호를 입력하세요.\n\n삭제 대상: '+name);
   if(!pw)return;
 
-  // 별도 클라이언트로 관리자 비밀번호만 확인 (현재 세션 유지)
   toast('관리자 권한 확인 중...');
   var tempSb=window.supabase.createClient(SB_URL,SB_KEY,{auth:{persistSession:false}});
   var auth=await tempSb.auth.signInWithPassword({email:'admin@c41.app',password:pw});
   if(auth.error){toast('관리자 비밀번호가 올바르지 않습니다');return;}
   await tempSb.auth.signOut();
 
-  // 관리자 확인 완료 → 삭제 수행 (현재 교구 세션으로)
-  if(!confirm(name+'님을 정말 삭제하시겠습니까?\n보고서 데이터도 함께 삭제됩니다.'))return;
+  if(!confirm(name+'님을 삭제하시겠습니까?\n기존 출석 이력은 보존됩니다.'))return;
 
-  var r1=await sb.from('members').delete().eq('parish_id',S.pid).eq('name',name);
+  // 소프트 삭제: state = 'Delete'로 업데이트 (이력 보존)
+  var r1=await sb.from('members').update({state:'Delete',deleted_at:new Date().toISOString(),deleted_by:'admin'}).eq('parish_id',S.pid).eq('name',name);
   var r2=await sb.from('reports').update({state:'Delete'}).eq('parish_id',S.pid).eq('member_name',name);
 
   if(!r1.error){
     S.members=S.members.filter(function(m){return m.n!==name;});
     delete S.data[name];
     S.expanded=null;
-    toast(name+' 삭제 완료');
+    toast(name+' 삭제 완료 (이력 보존)');
     render();
   }else{toast('삭제 실패: '+r1.error.message);}
 }
