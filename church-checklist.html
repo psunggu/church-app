@@ -133,15 +133,15 @@ function toast(m){var t=document.getElementById('toast');t.textContent=m;t.class
 function esc(s){return s.replace(/'/g,"\\'");}
 
 async function loadMembers(){
-  var r=await sb.from('members').select('name,role').eq('parish_id',S.pid).order('created_at');
-  if(r.data&&r.data.length>0)S.members=r.data.map(function(m){return{n:m.name,r:m.role};});
+  var r=await sb.from('members').select('name,role,state').eq('parish_id',S.pid).order('created_at');
+  if(r.data&&r.data.length>0)S.members=r.data.filter(function(m){return m.state!=='Delete';}).map(function(m){return{n:m.name,r:m.role};});
 }
 async function loadWeek(){
   S.loading=true;render();
   var r=await sb.from('reports').select('*').eq('report_date',S.week).eq('parish_id',S.pid);
   S.data=emptyAll();
   if(r.data&&r.data.length>0){
-    r.data.forEach(function(row){
+    r.data.filter(function(row){return row.state!=='Delete';}).forEach(function(row){
       if(!S.data[row.member_name])S.data[row.member_name]=empty();
       ITEMS.forEach(function(it){var v=row[it.c];if(it.t==='c')S.data[row.member_name][it.k]=(v==='O');else S.data[row.member_name][it.k]=v?String(v):'';});
     });
@@ -170,7 +170,6 @@ async function addMember(){
   var r=await sb.from('members').insert({parish_id:S.pid,name:name,role:role});
   if(!r.error){S.members.push({n:name,r:role});S.data[name]=empty();S.addingMember=false;toast(name+' 추가');render();}
 }
-async function showJwt(){var s=await sb.auth.getSession();alert('metadata: '+JSON.stringify(s.data.session.user.user_metadata));}
 async function delMember(name){
   var pw=prompt('구역원을 삭제하려면 관리자 비밀번호를 입력하세요.\n\n삭제 대상: '+name);
   if(!pw)return;
@@ -190,9 +189,9 @@ async function delMember(name){
   var sess=await sb.auth.getSession();
   if(!sess.data.session){toast('세션 만료 — 다시 로그인해주세요');S.ready=false;render();return;}
 
-  // 소프트 삭제
-  var r1=await sb.from('members').update({state:'Delete',deleted_at:new Date().toISOString(),deleted_by:'admin'}).eq('parish_id',S.pid).eq('name',name);
-  var r2=await sb.from('reports').update({state:'Delete'}).eq('parish_id',S.pid).eq('member_name',name);
+  // 소프트 삭제 (Prefer: return=minimal 헤더로 UPDATE 후 SELECT 회피)
+  var r1=await sb.from('members').update({state:'Delete',deleted_at:new Date().toISOString(),deleted_by:'admin'},{count:'exact'}).eq('parish_id',S.pid).eq('name',name);
+  var r2=await sb.from('reports').update({state:'Delete'},{count:'exact'}).eq('parish_id',S.pid).eq('member_name',name);
 
   if(!r1.error){
     S.members=S.members.filter(function(m){return m.n!==name;});
