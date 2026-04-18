@@ -170,6 +170,7 @@ async function addMember(){
   var r=await sb.from('members').insert({parish_id:S.pid,name:name,role:role});
   if(!r.error){S.members.push({n:name,r:role});S.data[name]=empty();S.addingMember=false;toast(name+' 추가');render();}
 }
+async function showJwt(){var s=await sb.auth.getSession();alert('metadata: '+JSON.stringify(s.data.session.user.user_metadata));}
 async function delMember(name){
   var pw=prompt('구역원을 삭제하려면 관리자 비밀번호를 입력하세요.\n\n삭제 대상: '+name);
   if(!pw)return;
