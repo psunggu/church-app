@@ -76,7 +76,7 @@ function toast(m){var t=document.getElementById('toast');t.textContent=m;t.class
 
 async function loadData(){D.loading=true;render();var r=await sb.from('reports').select('*').eq('report_date',D.week);D.data=r.data||[];D.loading=false;var ag=calc();var done=ag?PARISHES.filter(function(p){return ag[p].total>0;}).length:0;toast(done>0?done+'개 구역 입력 완료':'입력된 구역 없음');render();}
 function calc(){if(!D.data)return null;var r={};PARISHES.forEach(function(p){r[p]={n:0,leader:'',lAtt:0,lBible:0,items:{},total:0,att:[]};COLS.forEach(function(c){r[p].items[c.k]={cnt:0,sum:0,sc:0};});});D.data.forEach(function(row){var pid=String(row.parish_id);if(!r[pid])return;r[pid].n++;if(row.role==='구역장'){r[pid].leader=row.member_name;if(row.attendance==='O')r[pid].lAtt=1;r[pid].lBible=parseInt(row.bible_read)||0;}if(row.attendance==='O')r[pid].att.push(row.member_name);COLS.forEach(function(c){var v=row[c.k];if(c.t==='c'){if(v==='O'){r[pid].items[c.k].cnt++;r[pid].items[c.k].sc+=c.p;}}else{var n=parseInt(v)||0;if(n>0){r[pid].items[c.k].cnt++;r[pid].items[c.k].sum+=n;r[pid].items[c.k].sc+=n*c.p;}}});});PARISHES.forEach(function(p){COLS.forEach(function(c){r[p].total+=r[p].items[c.k].sc;});});return r;}
-function setW(k){D.week=k;D.data=null;render();}
+function setW(k){D.week=k;D.data=null;render();loadData();}
 function render(){var sy=window.scrollY;_render();requestAnimationFrame(function(){window.scrollTo(0,sy);});}
 
 function renderLogin(){
@@ -110,6 +110,7 @@ async function onAuth(user){
   var meta=user.user_metadata||{};
   if(meta.role==='parish'){window.location.href='church-checklist.html';return;}
   D.ready=true;render();
+  loadData();
 }
 async function doLogout(){await sb.auth.signOut();D.ready=false;render();}
 
