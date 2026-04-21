@@ -116,7 +116,7 @@ function kstDateStr(){var k=kstNow();return k.getFullYear()+'년 '+(k.getMonth()
 var sundays=[];
 (function(){var now=kstNow();for(var i=-12;i<=4;i++){var d=new Date(now);var day=d.getDay();d.setDate(d.getDate()-day+(day===0?0:7)+i*7);d.setHours(0,0,0,0);var m=d.getMonth()+1,dt=d.getDate();sundays.push({k:d.getFullYear()+'-'+String(m).padStart(2,'0')+'-'+String(dt).padStart(2,'0'),l:m+'/'+dt,ts:d.getTime()});}})();
 
-var S={pid:'',pname:'',role:'',week:'',data:{},members:[],expanded:null,view:'list',ready:false,loading:false,addingMember:false,unsaved:false,touched:{},lastMod:null};
+var S={pid:'',pname:'',role:'',week:'',data:{},members:[],expanded:null,view:'list',ready:false,loading:false,addingMember:false,unsaved:false,touched:{},lastMod:null,adminMode:false};
 S.week=(function(){
   var now=kstNow(),todayMs=new Date(now.getFullYear(),now.getMonth(),now.getDate()).getTime();
   var best=sundays[0],bestDiff=Math.abs(sundays[0].ts-todayMs);
@@ -253,10 +253,23 @@ async function doLogin(){
 
 async function onAuth(user){
   var meta=user.user_metadata||{};
-  S.pid=meta.parish_id||'';S.pname=meta.name||'';S.role=meta.role||'parish';
-  if(S.role==='admin'){window.location.href='church-dashboard.html';return;}
+  S.role=meta.role||'parish';
+  // admin이 특정 교구 보려는 경우 (?parish=4133)
+  if(S.role==='admin'){
+    var qp=new URLSearchParams(window.location.search);
+    var pid=qp.get('parish');
+    if(pid){
+      S.pid=pid;S.pname=pid+'구역 (관리자)';S.adminMode=true;
+      S.ready=true;await loadMembers();await loadWeek();return;
+    }
+    // parish 파라미터 없으면 대시보드로
+    window.location.href='church-dashboard.html';return;
+  }
+  // 일반 교구원
+  S.pid=meta.parish_id||'';S.pname=meta.name||'';S.adminMode=false;
   S.ready=true;await loadMembers();await loadWeek();
 }
+function backToDashboard(){window.location.href='church-dashboard.html';}
 async function doLogout(){await sb.auth.signOut();S.ready=false;S.pid='';S.pname='';render();}
 
 function _render(){
@@ -266,7 +279,10 @@ function _render(){
   var ac=M.filter(function(m){return d[m.n]&&d[m.n].at;}).length;
   var ts=M.reduce(function(s,m){return s+score(d[m.n]);},0);
   var att=M.filter(function(m){return d[m.n]&&d[m.n].at;}).map(function(m){return m.n;});
-  var h='<div class="hd"><div><h1>'+S.pname+'</h1><p>'+(wk?wk.l:'')+' 주일 · <span style="font-size:10px;color:#7a9b70">'+kstDateStr()+'</span></p></div><button onclick="doLogout()"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#b8b3a6" stroke-width="1.5"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9"/></svg></button></div>';
+  var backBtn=S.adminMode
+    ?'<button onclick="backToDashboard()" title="대시보드로"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#b8b3a6" stroke-width="1.5"><path d="M19 12H5M12 19l-7-7 7-7"/></svg></button>'
+    :'<button onclick="doLogout()"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#b8b3a6" stroke-width="1.5"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9"/></svg></button>';
+  var h='<div class="hd"><div><h1>'+S.pname+'</h1><p>'+(wk?wk.l:'')+' 주일 · <span style="font-size:10px;color:#7a9b70">'+kstDateStr()+'</span></p></div>'+backBtn+'</div>';
   h+='<div class="tabs" id="tabbar">';for(var i=0;i<sundays.length;i++){var s=sundays[i];h+='<button class="'+(s.k===S.week?'on':'')+'" onclick="setWeek(\''+s.k+'\')">'+s.l+'</button>';}h+='</div>';
   if(S.loading){h+='<div style="text-align:center;padding:40px;color:#8a8578">불러오는 중...</div><div class="ft"><button class="bp" disabled>로딩...</button></div>';document.getElementById('app').innerHTML=h;requestAnimationFrame(function(){var a=document.querySelector('.tabs .on');if(a)a.scrollIntoView({inline:'center',behavior:'auto'});});return;}
   h+='<div class="sum"><div><div class="n" id="s-ac">'+ac+'</div><div class="l">출석 / '+M.length+'</div></div><div class="dv"></div><div><div class="n" id="s-ts">'+ts.toLocaleString()+'</div><div class="l">총점</div></div></div>';
