@@ -106,9 +106,9 @@ var ITEMS=[
   {k:'mp',l:'구역모임 장소',s:100,t:'c',g:4,c:'meeting_place'},
   {k:'wb',l:'겨울방학 성경읽기',s:1,u:'장',t:'n',g:4,c:'winter_bible'},
   {k:'bm',l:'성경 통독수련회',s:1189,t:'c',g:4,c:'bible_marathon'},
-  {k:'fu',l:'후속모임',s:0,t:'c',g:5,c:'followup_meeting',leaderOnly:true}
+  {k:'fu',l:'후속모임',s:0,t:'c',g:0.5,c:'followup_meeting',leaderOnly:true}
 ];
-var GROUPS=[{l:'📖 성경',g:1},{l:'🙏 신앙생활',g:2},{l:'🤝 봉사',g:3},{l:'⭐ 특별항목',g:4},{l:'👥 구역장 항목',g:5}];
+var GROUPS=[{l:'👥 구역장',g:0.5},{l:'📖 성경',g:1},{l:'🙏 신앙생활',g:2},{l:'🤝 봉사',g:3},{l:'⭐ 특별항목',g:4}];
 
 // KST 현재 시간
 function kstNow(){var now=new Date();var utc=now.getTime()+now.getTimezoneOffset()*60000;return new Date(utc+9*3600000);}
