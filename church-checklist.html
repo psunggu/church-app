@@ -105,16 +105,17 @@ var ITEMS=[
   {k:'en',l:'환경보호점수',s:100,t:'c',g:4,c:'environment'},
   {k:'mp',l:'구역모임 장소',s:100,t:'c',g:4,c:'meeting_place'},
   {k:'wb',l:'겨울방학 성경읽기',s:1,u:'장',t:'n',g:4,c:'winter_bible'},
-  {k:'bm',l:'성경 통독수련회',s:1189,t:'c',g:4,c:'bible_marathon'}
+  {k:'bm',l:'성경 통독수련회',s:1189,t:'c',g:4,c:'bible_marathon'},
+  {k:'fu',l:'후속모임',s:0,t:'c',g:5,c:'followup_meeting',leaderOnly:true}
 ];
-var GROUPS=[{l:'📖 성경',g:1},{l:'🙏 신앙생활',g:2},{l:'🤝 봉사',g:3},{l:'⭐ 특별항목',g:4}];
+var GROUPS=[{l:'📖 성경',g:1},{l:'🙏 신앙생활',g:2},{l:'🤝 봉사',g:3},{l:'⭐ 특별항목',g:4},{l:'👥 구역장 항목',g:5}];
 
 // KST 현재 시간
 function kstNow(){var now=new Date();var utc=now.getTime()+now.getTimezoneOffset()*60000;return new Date(utc+9*3600000);}
 function kstDateStr(){var k=kstNow();return k.getFullYear()+'년 '+(k.getMonth()+1)+'월 '+k.getDate()+'일 ('+['일','월','화','수','목','금','토'][k.getDay()]+') '+String(k.getHours()).padStart(2,'0')+':'+String(k.getMinutes()).padStart(2,'0');}
 
 var sundays=[];
-(function(){var now=kstNow();for(var i=-12;i<=9;i++){var d=new Date(now);var day=d.getDay();d.setDate(d.getDate()-day+(day===0?0:7)+i*7);d.setHours(0,0,0,0);var m=d.getMonth()+1,dt=d.getDate();sundays.push({k:d.getFullYear()+'-'+String(m).padStart(2,'0')+'-'+String(dt).padStart(2,'0'),l:m+'/'+dt,ts:d.getTime()});}})();
+(function(){var now=kstNow();for(var i=-12;i<=8;i++){var d=new Date(now);var day=d.getDay();d.setDate(d.getDate()-day+(day===0?0:7)+i*7);d.setHours(0,0,0,0);var m=d.getMonth()+1,dt=d.getDate();sundays.push({k:d.getFullYear()+'-'+String(m).padStart(2,'0')+'-'+String(dt).padStart(2,'0'),l:m+'/'+dt,ts:d.getTime()});}})();
 
 var S={pid:'',pname:'',role:'',week:'',data:{},members:[],expanded:null,view:'list',ready:false,loading:false,addingMember:false,unsaved:false,touched:{},lastMod:null,adminMode:false};
 S.week=(function(){
@@ -297,21 +298,25 @@ function _render(){
       h+='<div class="mn">'+m.n+(m.r!=='구역원'?'<span class="badge">'+m.r+'</span>':'')+'<small id="mi-'+CSS.escape(m.n)+'">'+(fc>0?fc+'개 항목 · '+sc_+'점':'')+'</small></div>';
       h+='<span class="sc" id="ms-'+CSS.escape(m.n)+'" style="display:'+(sc_>0?'':'none')+'">'+(sc_>0?sc_:'')+'</span>';
       h+='<svg class="arr" width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M6 9l6 6 6-6" stroke="#8a8578" stroke-width="2" stroke-linecap="round"/></svg></div><div class="dt">';
-      GROUPS.forEach(function(g){var items=ITEMS.filter(function(it){return it.g===g.g;});h+='<div class="gh">'+g.l+'</div>';items.forEach(function(it){h+='<div class="ir"><div class="il">'+it.l+'<span>'+(it.t==='n'?it.u+'당 '+it.s+'점':it.s+'점')+'</span></div>';if(it.t==='c')h+='<button class="tb'+(md[it.k]?' on':'')+'" id="tb-'+CSS.escape(m.n)+'-'+it.k+'" onclick="ckItem(\''+en+'\',\''+it.k+'\')">'+(md[it.k]?'O':'X')+'</button>';else h+='<div class="nw"><button class="pm" onclick="numAdj(\''+en+'\',\''+it.k+'\',-1)">−</button><input class="ni" id="ni-'+CSS.escape(m.n)+'-'+it.k+'" type="number" inputmode="numeric" value="'+(md[it.k]||'')+'" placeholder="0" onchange="numSet(\''+en+'\',\''+it.k+'\',this.value)"><button class="pm" onclick="numAdj(\''+en+'\',\''+it.k+'\',1)">+</button></div>';h+='</div>';});});
+      GROUPS.forEach(function(g){var items=ITEMS.filter(function(it){return it.g===g.g && (!it.leaderOnly || m.r==='구역장');});if(items.length===0)return;h+='<div class="gh">'+g.l+'</div>';items.forEach(function(it){h+='<div class="ir"><div class="il">'+it.l+'<span>'+(it.t==='n'?it.u+'당 '+it.s+'점':it.s+'점')+'</span></div>';if(it.t==='c')h+='<button class="tb'+(md[it.k]?' on':'')+'" id="tb-'+CSS.escape(m.n)+'-'+it.k+'" onclick="ckItem(\''+en+'\',\''+it.k+'\')">'+(md[it.k]?'O':'X')+'</button>';else h+='<div class="nw"><button class="pm" onclick="numAdj(\''+en+'\',\''+it.k+'\',-1)">−</button><input class="ni" id="ni-'+CSS.escape(m.n)+'-'+it.k+'" type="number" inputmode="numeric" value="'+(md[it.k]||'')+'" placeholder="0" onchange="numSet(\''+en+'\',\''+it.k+'\',this.value)"><button class="pm" onclick="numAdj(\''+en+'\',\''+it.k+'\',1)">+</button></div>';h+='</div>';});});
       h+='<button class="del-btn" onclick="delMember(\''+en+'\')">🗑 '+m.n+' 삭제</button>';
       h+='</div></div>';});
     h+='<div class="add-area">'+(S.addingMember?'<div class="add-form"><input id="add-name" placeholder="이름" style="flex:2"><select id="add-role"><option value="구역원">구역원</option><option value="구역장">구역장</option><option value="권찰">권찰</option></select><button class="add-ok" onclick="addMember()">추가</button><button class="add-cancel" onclick="hideAdd()">취소</button></div>':'<button class="add-btn" onclick="showAdd()">+ 구역원 추가</button>')+'</div>';
   }
-  if(S.view==='summary'){h+='<div class="sv" style="display:block">';ITEMS.forEach(function(it){var cnt=0,sum=0;M.forEach(function(m){var md=d[m.n]||empty();if(it.t==='c'&&md[it.k]){cnt++;sum+=it.s;}else if(it.t==='n'){var v=parseInt(md[it.k])||0;if(v>0){cnt++;sum+=v*it.s;}}});h+='<div class="sr"><div><div class="sn">'+it.l+'</div><div class="sm">'+cnt+'명</div></div><div><div class="sv2">'+sum.toLocaleString()+'</div><div class="sv3">점</div></div></div>';});h+='<div class="sr total"><div class="sn" style="font-size:15px">합계</div><div class="sv2" style="font-size:20px">'+ts.toLocaleString()+'점</div></div></div>';}
+  if(S.view==='summary'){h+='<div class="sv" style="display:block">';var sumOrder=ITEMS.slice().sort(function(a,b){if(a.k==='at')return -1;if(b.k==='at')return 1;if(a.k==='fu')return -1;if(b.k==='fu')return 1;return 0;});sumOrder.forEach(function(it){var cnt=0,sum=0;M.forEach(function(m){var md=d[m.n]||empty();if(it.leaderOnly&&m.r!=='구역장')return;if(it.t==='c'&&md[it.k]){cnt++;sum+=it.s;}else if(it.t==='n'){var v=parseInt(md[it.k])||0;if(v>0){cnt++;sum+=v*it.s;}}});h+='<div class="sr"><div><div class="sn">'+it.l+(it.leaderOnly?' <span style="font-size:9px;color:#a09a8c">(구역장)</span>':'')+'</div><div class="sm">'+cnt+'명</div></div><div><div class="sv2">'+sum.toLocaleString()+'</div><div class="sv3">점</div></div></div>';});h+='<div class="sr total"><div class="sn" style="font-size:15px">합계</div><div class="sv2" style="font-size:20px">'+ts.toLocaleString()+'점</div></div></div>';}
   if(S.view==='report'){
-    var cols=ITEMS.filter(function(i){return i.k!=='at';});
+    var fuItem=ITEMS.find(function(i){return i.k==='fu';});
+    var cols=ITEMS.filter(function(i){return i.k!=='at' && i.k!=='fu';});
     h+='<div class="rpt"><table>';
-    h+='<tr><th class="col-name">이름</th><th>출석<br>(20)</th>';
+    h+='<tr><th class="col-name">이름</th>';
+    if(fuItem)h+='<th style="background:#5a4f3a">후속모임<br>(구역장)</th>';
+    h+='<th>출석<br>(20)</th>';
     cols.forEach(function(c){h+='<th>'+c.l+'<br>('+(c.t==='n'?c.u+'당'+c.s:c.s)+')</th>';});
     h+='<th style="background:#1e2a1f">합계</th></tr>';
     M.forEach(function(m){
       var md=d[m.n]||empty(),sc_=score(md);
       h+='<tr><td class="name">'+m.n+'</td>';
+      if(fuItem){h+=m.r==='구역장'?(md.fu?'<td class="ck-o">O</td>':'<td class="ck-x">-</td>'):'<td class="ck-x" style="background:#f5f5f5"></td>';}
       h+=md.at?'<td class="ck-o">O</td>':'<td class="ck-x">-</td>';
       cols.forEach(function(c){
         if(c.t==='c'){h+=md[c.k]?'<td class="ck-o">O</td>':'<td class="ck-x">-</td>';}
@@ -320,6 +325,7 @@ function _render(){
       h+='<td class="score-col">'+(sc_>0?sc_:'')+'</td></tr>';
     });
     h+='<tr class="total-row"><td class="name">합계</td>';
+    if(fuItem){var fuCnt=M.filter(function(m){return m.r==='구역장' && (d[m.n]||empty()).fu;}).length;h+='<td>'+fuCnt+'</td>';}
     h+='<td>'+M.filter(function(m){return(d[m.n]||empty()).at;}).length+'</td>';
     cols.forEach(function(c){var cnt=0,sum=0;M.forEach(function(m){var md=d[m.n]||empty();if(c.t==='c'&&md[c.k])cnt++;else if(c.t==='n'){var v=parseInt(md[c.k])||0;if(v>0)sum+=v;}});h+=c.t==='c'?'<td>'+cnt+'</td>':'<td>'+(sum>0?sum:0)+'</td>';});
     h+='<td class="score-col">'+ts.toLocaleString()+'</td></tr>';
