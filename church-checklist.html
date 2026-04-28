@@ -322,7 +322,7 @@ function _render(){
       cols.forEach(function(c){
         if(c.t==='c'){h+=md[c.k]?'<td class="ck-o">O</td>':'<td class="ck-x">-</td>';}
         else{var v=parseInt(md[c.k])||0;
-          if(v>0){var psc=v*c.p;var capped=false;if(capMap[c.k]&&psc>capMap[c.k]){psc=capMap[c.k];capped=true;}
+          if(v>0){var psc=v*c.s;var capped=false;if(capMap[c.k]&&psc>capMap[c.k]){psc=capMap[c.k];capped=true;}
             h+='<td class="num">'+v+(capMap[c.k]?'<br><span style="font-size:9px;color:'+(capped?'#e65100':'#888')+';font-weight:600">→'+psc+'점</span>':'')+'</td>';
           }else{h+='<td class="ck-x">0</td>';}
         }
@@ -332,7 +332,7 @@ function _render(){
     h+='<tr class="total-row"><td class="name">합계</td>';
     if(fuItem){var fuCnt=M.filter(function(m){return m.r==='구역장' && (d[m.n]||empty()).fu;}).length;h+='<td>'+fuCnt+'</td>';}
     h+='<td>'+M.filter(function(m){return(d[m.n]||empty()).at;}).length+'</td>';
-    cols.forEach(function(c){var cnt=0,sum=0,scSum=0;M.forEach(function(m){var md=d[m.n]||empty();if(c.t==='c'&&md[c.k])cnt++;else if(c.t==='n'){var v=parseInt(md[c.k])||0;if(v>0){sum+=v;var psc=v*c.p;if(capMap[c.k]&&psc>capMap[c.k])psc=capMap[c.k];scSum+=psc;}}});if(c.t==='c'){h+='<td>'+cnt+'</td>';}else{h+='<td>'+(sum>0?sum:0)+(capMap[c.k]?'<br><span style="font-size:9px;color:#888;font-weight:600">→'+scSum+'점</span>':'')+'</td>';}});
+    cols.forEach(function(c){var cnt=0,sum=0,scSum=0;M.forEach(function(m){var md=d[m.n]||empty();if(c.t==='c'&&md[c.k])cnt++;else if(c.t==='n'){var v=parseInt(md[c.k])||0;if(v>0){sum+=v;var psc=v*c.s;if(capMap[c.k]&&psc>capMap[c.k])psc=capMap[c.k];scSum+=psc;}}});if(c.t==='c'){h+='<td>'+cnt+'</td>';}else{h+='<td>'+(sum>0?sum:0)+(capMap[c.k]?'<br><span style="font-size:9px;color:#888;font-weight:600">→'+scSum+'점</span>':'')+'</td>';}});
     h+='<td class="score-col">'+ts.toLocaleString()+'</td></tr>';
     h+='</table></div>';
   }
