@@ -68,7 +68,7 @@ var COLS=[
   {k:'environment',l:'환경보호',p:100,t:'c',s:['여부','합산']},{k:'meeting_place',l:'구역모임장소',p:100,t:'c',s:['여부','합산']}
 ];
 var sundays=[];
-(function(){var now=new Date();for(var i=-12;i<=4;i++){var d=new Date(now);var day=d.getDay();d.setDate(d.getDate()-day+(day===0?0:7)+i*7);d.setHours(0,0,0,0);var m=d.getMonth()+1,dt=d.getDate();sundays.push({k:d.getFullYear()+'-'+String(m).padStart(2,'0')+'-'+String(dt).padStart(2,'0'),l:m+'/'+dt,ts:d.getTime()});}})();
+(function(){var now=new Date();for(var i=-12;i<=9;i++){var d=new Date(now);var day=d.getDay();d.setDate(d.getDate()-day+(day===0?0:7)+i*7);d.setHours(0,0,0,0);var m=d.getMonth()+1,dt=d.getDate();sundays.push({k:d.getFullYear()+'-'+String(m).padStart(2,'0')+'-'+String(dt).padStart(2,'0'),l:m+'/'+dt,ts:d.getTime()});}})();
 
 var D={week:'',data:null,loading:false,ready:false};
 D.week=(function(){var c=sundays[0],now=Date.now();for(var i=0;i<sundays.length;i++){if(Math.abs(sundays[i].ts-now)<Math.abs(c.ts-now))c=sundays[i];}return c.k;})();

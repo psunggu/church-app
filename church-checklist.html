@@ -114,7 +114,7 @@ function kstNow(){var now=new Date();var utc=now.getTime()+now.getTimezoneOffset
 function kstDateStr(){var k=kstNow();return k.getFullYear()+'년 '+(k.getMonth()+1)+'월 '+k.getDate()+'일 ('+['일','월','화','수','목','금','토'][k.getDay()]+') '+String(k.getHours()).padStart(2,'0')+':'+String(k.getMinutes()).padStart(2,'0');}
 
 var sundays=[];
-(function(){var now=kstNow();for(var i=-12;i<=4;i++){var d=new Date(now);var day=d.getDay();d.setDate(d.getDate()-day+(day===0?0:7)+i*7);d.setHours(0,0,0,0);var m=d.getMonth()+1,dt=d.getDate();sundays.push({k:d.getFullYear()+'-'+String(m).padStart(2,'0')+'-'+String(dt).padStart(2,'0'),l:m+'/'+dt,ts:d.getTime()});}})();
+(function(){var now=kstNow();for(var i=-12;i<=9;i++){var d=new Date(now);var day=d.getDay();d.setDate(d.getDate()-day+(day===0?0:7)+i*7);d.setHours(0,0,0,0);var m=d.getMonth()+1,dt=d.getDate();sundays.push({k:d.getFullYear()+'-'+String(m).padStart(2,'0')+'-'+String(dt).padStart(2,'0'),l:m+'/'+dt,ts:d.getTime()});}})();
 
 var S={pid:'',pname:'',role:'',week:'',data:{},members:[],expanded:null,view:'list',ready:false,loading:false,addingMember:false,unsaved:false,touched:{},lastMod:null,adminMode:false};
 S.week=(function(){
