@@ -48,7 +48,7 @@ table.rt tr:nth-child(odd){background:#fff}table.rt tr:nth-child(even){backgroun
 // ★ Supabase 설정 — 아래 두 줄만 수정 ★
 // ══════════════════════════════════════
 var SB_URL = 'https://ybpeyxzqzccfvcaveluh.supabase.co';
-var SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlicGV5eHpxemNjZnZjYXZlbHVoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYyMzA0MTksImV4cCI6MjA5MTgwNjQxOX0.RpsniUKYkfDCJmgKSL6jme3viKoIWxbvojReuEZuDgk';
+var SB_KEY = 'sb_publishable_TdKPvs-Kr7DLY9XipHwjrQ_KioEfm8q';
 // ══════════════════════════════════════
 
 if(!SB_URL || SB_URL==='YOUR_URL' || !SB_KEY || SB_KEY==='YOUR_KEY'){
@@ -63,7 +63,7 @@ var COLS=[
   {k:'winter_bible',l:'겨울방학읽기',p:1,t:'n',s:['장','합산']},{k:'bible_marathon',l:'통독수련회',p:1189,t:'c',s:['인원','합산']},
   {k:'bible_write',l:'성경쓰기',p:5,t:'n',s:['쪽','합산']},{k:'bible_typing',l:'성경타이핑',p:2,t:'n',s:['쪽','합산']},
   {k:'memorize',l:'암송',p:3,t:'c',s:['인원','합산']},{k:'evangelism',l:'전도',p:50,t:'c',s:['인원','합산']},
-  {k:'district_service',l:'구역봉사',p:100,t:'c',s:['인원','합산']},{k:'sunday_service',l:'봉사팀봉사',p:30,t:'c',s:['개수','합산']},
+  {k:'district_service',l:'구역봉사',p:100,t:'multi',subCols:['district_service','district_service_saturday','district_service_weeding','district_service_tombstone'],s:['인원','합산']},{k:'sunday_service',l:'봉사팀봉사',p:30,t:'c',s:['개수','합산']},
   {k:'nurture',l:'양육',p:10,t:'c',s:['인원','합산']},{k:'martyr_guide',l:'양화진안내',p:20,t:'c',s:['인원','합산']},
   {k:'environment',l:'환경보호',p:100,t:'c',s:['여부','합산']},{k:'meeting_place',l:'구역모임장소',p:100,t:'c',s:['여부','합산']}
 ];
@@ -75,7 +75,7 @@ D.week=(function(){var c=sundays[0],now=Date.now();for(var i=0;i<sundays.length;
 function toast(m){var t=document.getElementById('toast');t.textContent=m;t.classList.add('show');setTimeout(function(){t.classList.remove('show');},2500);}
 
 async function loadData(){D.loading=true;render();var r=await sb.from('reports').select('*').eq('report_date',D.week).neq('state','Delete');D.data=r.data||[];D.loading=false;var ag=calc();var done=ag?PARISHES.filter(function(p){return ag[p].total>0;}).length:0;toast(done>0?done+'개 구역 입력 완료':'입력된 구역 없음');render();}
-function calc(){if(!D.data)return null;var r={};PARISHES.forEach(function(p){r[p]={n:0,leader:'',lAtt:0,lFu:0,lBible:0,bibleList:[],items:{},total:0,att:[]};COLS.forEach(function(c){r[p].items[c.k]={cnt:0,sum:0,sc:0};});});D.data.forEach(function(row){var pid=String(row.parish_id);if(!r[pid])return;r[pid].n++;if(row.role==='구역장'){r[pid].leader=row.member_name;if(row.attendance==='O')r[pid].lAtt=1;if(row.followup_meeting==='O')r[pid].lFu=1;r[pid].lBible=parseInt(row.bible_read)||0;}if(row.attendance==='O')r[pid].att.push(row.member_name);var brN=parseInt(row.bible_read)||0;if(brN>0)r[pid].bibleList.push(brN);COLS.forEach(function(c){var v=row[c.k];if(c.t==='c'){if(v==='O'){r[pid].items[c.k].cnt++;r[pid].items[c.k].sc+=c.p;}}else{var n=parseInt(v)||0;if(n>0){r[pid].items[c.k].cnt++;r[pid].items[c.k].sum+=n;var personSc=n*c.p;if(c.k==='bible_read'&&personSc>30)personSc=30;if(c.k==='winter_bible'&&personSc>390)personSc=390;r[pid].items[c.k].sc+=personSc;}}});});PARISHES.forEach(function(p){COLS.forEach(function(c){r[p].total+=r[p].items[c.k].sc;});});return r;}
+function calc(){if(!D.data)return null;var r={};PARISHES.forEach(function(p){r[p]={n:0,leader:'',lAtt:0,lFu:0,lBible:0,bibleList:[],items:{},total:0,att:[]};COLS.forEach(function(c){r[p].items[c.k]={cnt:0,sum:0,sc:0};});});D.data.forEach(function(row){var pid=String(row.parish_id);if(!r[pid])return;r[pid].n++;if(row.role==='구역장'){r[pid].leader=row.member_name;if(row.attendance==='O')r[pid].lAtt=1;if(row.followup_meeting==='O')r[pid].lFu=1;r[pid].lBible=parseInt(row.bible_read)||0;}if(row.attendance==='O')r[pid].att.push(row.member_name);var brN=parseInt(row.bible_read)||0;if(brN>0)r[pid].bibleList.push(brN);COLS.forEach(function(c){if(c.t==='multi'){var subs=c.subCols.filter(function(sc){return row[sc]==='O';});if(subs.length>0){r[pid].items[c.k].cnt++;r[pid].items[c.k].sc+=subs.length*c.p;}return;}var v=row[c.k];if(c.t==='c'){if(v==='O'){r[pid].items[c.k].cnt++;r[pid].items[c.k].sc+=c.p;}}else{var n=parseInt(v)||0;if(n>0){r[pid].items[c.k].cnt++;r[pid].items[c.k].sum+=n;var personSc=n*c.p;if(c.k==='bible_read'&&personSc>30)personSc=30;if(c.k==='winter_bible'&&personSc>390)personSc=390;r[pid].items[c.k].sc+=personSc;}}});});PARISHES.forEach(function(p){COLS.forEach(function(c){r[p].total+=r[p].items[c.k].sc;});});return r;}
 function setW(k){D.week=k;D.data=null;render();loadData();}
 function render(){var sy=window.scrollY;_render();requestAnimationFrame(function(){window.scrollTo(0,sy);});}
 
