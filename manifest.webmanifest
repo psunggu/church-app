@@ -1,0 +1,15 @@
+{
+  "name": "41교구 구역보고서",
+  "short_name": "구역보고서",
+  "description": "주간 출석 · 봉사 체크리스트",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#f3f6f2",
+  "theme_color": "#3f6b4d",
+  "lang": "ko",
+  "icons": [
+    { "src": "assets/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
+  ]
+}
